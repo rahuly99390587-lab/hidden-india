@@ -123,6 +123,10 @@
 
   /* ===== hero / seal motif (signature element) ===== */
   .hero{ position:relative; background:var(--grad-forest); color:#fff; overflow:hidden; }
+  /* To change the homepage hero photo: just replace the file named "hero.jpg"
+     inside the frontend folder (same folder as index.html) with your new image,
+     keeping the same filename, then redeploy. No code edits needed. */
+  .hero{ background-image:linear-gradient(135deg, rgba(20,40,30,0.72), rgba(20,40,30,0.5)), url('hero.jpg'); background-size:cover; background-position:center; }
   .hero::before{ content:''; position:absolute; inset:0; opacity:0.5; z-index:1;
     background:
       radial-gradient(640px 320px at 88% 10%, rgba(191,91,52,0.35), transparent 60%),
