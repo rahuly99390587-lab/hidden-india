@@ -114,6 +114,12 @@
   .footer-links{ display:flex; gap:26px; flex-wrap:wrap; font-size:0.88rem; opacity:0.85; margin-bottom:22px; }
   .footer-links a{ transition:opacity .2s var(--ease); }
   .footer-links a:hover{ opacity:0.6; }
+  .footer-contact{ display:flex; gap:26px; flex-wrap:wrap; font-size:0.86rem; opacity:0.85; margin-bottom:18px; }
+  .footer-contact a{ display:inline-flex; align-items:center; gap:8px; transition:opacity .2s var(--ease); }
+  .footer-contact a:hover{ opacity:0.6; }
+  .footer-social{ display:flex; gap:14px; margin-bottom:22px; }
+  .footer-social a{ width:36px; height:36px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.1); font-size:1rem; transition:background .2s var(--ease), transform .2s var(--ease); }
+  .footer-social a:hover{ background:rgba(255,255,255,0.22); transform:translateY(-2px); }
   .footer-bottom{ border-top:1px solid rgba(255,255,255,0.12); padding-top:16px; font-size:0.78rem; opacity:0.6; }
 
   .wrap{ max-width:1180px; margin:0 auto; padding:0 20px; }

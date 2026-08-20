@@ -61,20 +61,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // /* =========================================================
 //    HIDDEN INDIA — client-side demo app
 //    Data persists via window.storage (per-browser, personal).
@@ -676,6 +662,14 @@
 //       <div><div class="org">${escapeHtml(s.organization)}</div><div class="sub">${escapeHtml(s.title)}</div></div>
 //       <a class="btn btn-ghost btn-sm" href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer">↗</a>
 //     </div>`).join('');
+//   const nearby = (d.nearby||[]).map(n=>`
+//     <div class="source-card">
+//       <div>
+//         <div class="org">${escapeHtml(n.name)}</div>
+//         <div class="sub">${escapeHtml(n.note||'')}</div>
+//       </div>
+//       ${n.distance ? `<span style="font-size:0.78rem;font-weight:700;color:var(--terracotta-deep);white-space:nowrap;">${escapeHtml(n.distance)}</span>` : ''}
+//     </div>`).join('');
 //   return `
 //   <div class="wrap section">
 //     <div class="breadcrumb"><a href="#/">Home</a> / <a href="#/explore">Explore</a> / ${escapeHtml(t(d,'name'))}</div>
@@ -723,6 +717,10 @@
 //           <h3>📚 ${L==='hi'?'सत्यापित जानकारी':'Verified Information'}</h3>
 //           ${d.verified ? `<div class="verified-strip">✓ ${L==='hi'?'सत्यापित सूत्रों से संकलित':'Compiled from verified sources'}</div>` : ''}
 //           ${sources || `<div style="font-size:0.85rem;color:var(--charcoal-soft);">${L==='hi'?'कोई सूत्र दर्ज नहीं':'No sources recorded'}</div>`}
+//         </div>
+//         <div class="side-card">
+//           <h3>📍 ${L==='hi'?'आस-पास के प्रसिद्ध स्थान':'Nearby Places'}</h3>
+//           ${nearby || `<div style="font-size:0.85rem;color:var(--charcoal-soft);">${L==='hi'?'अभी कोई आस-पास का स्थान दर्ज नहीं किया गया':'No nearby places added yet.'}</div>`}
 //         </div>
 //       </div>
 //     </div>
@@ -887,7 +885,7 @@
 //   const v = d || {name_en:'',name_hi:'',state:'',district:'',category:'heritage',lat:'',lng:'',
 //     short_en:'',short_hi:'',about_en:'',about_hi:'',history_en:'',history_hi:'',culture_en:'',culture_hi:'',
 //     best_time_en:'',best_time_hi:'',cover_image:'', status:'draft', verified:false,
-//     tips:[{en:'',hi:''}], sources:[{organization:'',title:'',url:''}]};
+//     tips:[{en:'',hi:''}], sources:[{organization:'',title:'',url:''}], nearby:[{name:'',distance:'',note:''}]};
 //   window.__modalImages = { cover: v.cover_image || '', gallery: JSON.parse(JSON.stringify(v.images||[])) };
 //   const catOpts = CATEGORIES.map(c=>`<option value="${c.id}" ${v.category===c.id?'selected':''}>${c.name_en}</option>`).join('');
 //   const tipsHtml = v.tips.map((tp,i)=>`
@@ -902,6 +900,13 @@
 //       <input placeholder="Title" value="${escapeHtml(s.title)}" data-src-title/>
 //       <input placeholder="URL" value="${escapeHtml(s.url)}" data-src-url/>
 //       <button type="button" class="remove-row" onclick="this.closest('[data-source-row]').remove()">✕</button>
+//     </div>`).join('');
+//   const nearbyHtml = (v.nearby||[]).map((n,i)=>`
+//     <div class="dynamic-row" data-nearby-row>
+//       <input placeholder="Place name" value="${escapeHtml(n.name)}" data-nearby-name/>
+//       <input placeholder="Distance (e.g. 12 km)" value="${escapeHtml(n.distance||'')}" data-nearby-distance/>
+//       <input placeholder="Short note" value="${escapeHtml(n.note||'')}" data-nearby-note/>
+//       <button type="button" class="remove-row" onclick="this.closest('[data-nearby-row]').remove()">✕</button>
 //     </div>`).join('');
 
 //   const modalHtml = `
@@ -970,6 +975,10 @@
 //         <div id="sourcesList">${sourcesHtml}</div>
 //         <button type="button" class="btn btn-ghost btn-sm" onclick="addDynamicRow('sourcesList','source')">+ Add Source</button>
 
+//         <div class="form-section-title">Nearby Places</div>
+//         <div id="nearbyList2">${nearbyHtml}</div>
+//         <button type="button" class="btn btn-ghost btn-sm" onclick="addDynamicRow('nearbyList2','nearby')">+ Add Nearby Place</button>
+
 //         <div class="form-section-title">Publishing</div>
 //         <div class="form-grid">
 //           <div class="form-group"><label>Status</label><select name="status"><option value="draft" ${v.status==='draft'?'selected':''}>Draft</option><option value="published" ${v.status==='published'?'selected':''}>Published</option></select></div>
@@ -991,6 +1000,9 @@
 //   if(kind==='tip'){
 //     row.className='dynamic-row'; row.setAttribute('data-tip-row','');
 //     row.innerHTML = `<input placeholder="Tip (English)" data-tip-en/><input placeholder="Tip (Hindi)" data-tip-hi/><button type="button" class="remove-row" onclick="this.closest('[data-tip-row]').remove()">✕</button>`;
+//   } else if(kind==='nearby'){
+//     row.className='dynamic-row'; row.setAttribute('data-nearby-row','');
+//     row.innerHTML = `<input placeholder="Place name" data-nearby-name/><input placeholder="Distance (e.g. 12 km)" data-nearby-distance/><input placeholder="Short note" data-nearby-note/><button type="button" class="remove-row" onclick="this.closest('[data-nearby-row]').remove()">✕</button>`;
 //   } else {
 //     row.className='dynamic-row'; row.setAttribute('data-source-row','');
 //     row.innerHTML = `<input placeholder="Organization" data-src-org/><input placeholder="Title" data-src-title/><input placeholder="URL" data-src-url/><button type="button" class="remove-row" onclick="this.closest('[data-source-row]').remove()">✕</button>`;
@@ -1122,6 +1134,11 @@
 //     title: r.querySelector('[data-src-title]').value.trim(),
 //     url: r.querySelector('[data-src-url]').value.trim(),
 //   })).filter(s=>s.organization);
+//   const nearby = [...document.querySelectorAll('[data-nearby-row]')].map(r=>({
+//     name: r.querySelector('[data-nearby-name]').value.trim(),
+//     distance: r.querySelector('[data-nearby-distance]').value.trim(),
+//     note: r.querySelector('[data-nearby-note]').value.trim(),
+//   })).filter(n=>n.name);
 
 //   const data = {
 //     name_en: fd.get('name_en').trim(), name_hi: fd.get('name_hi').trim(),
@@ -1138,7 +1155,7 @@
 //     cover_image: (window.__modalImages && window.__modalImages.cover) || '',
 //     images: (window.__modalImages && window.__modalImages.gallery) || [],
 //     status: fd.get('status'), verified: fd.get('verified') === 'on',
-//     tips, sources,
+//     tips, sources, nearby,
 //   };
 //   if(fd.get('category') === '__custom__' && !data.category){ alert('Please type a name for the new category.'); return false; }
 //   if(isNaN(data.lat) || isNaN(data.lng)){ alert('Latitude and longitude must be valid numbers.'); return false; }
@@ -1386,7 +1403,7 @@
 
 
 
-
+ 
 /* =========================================================
    HIDDEN INDIA — client-side demo app
    Data persists via window.storage (per-browser, personal).
@@ -1419,7 +1436,7 @@ function loadGoogleMaps(){
   });
   return _leafletLoadingPromise;
 }
-
+ 
 /* =========================================================
    BACKEND API — connects to the hidden-india-backend project
    (Node/Express + PostgreSQL, deployed separately).
@@ -1446,7 +1463,7 @@ async function apiFetch(path, options={}){
   if(!res.ok){ throw new Error((body && body.error) || `Request failed (${res.status})`); }
   return body;
 }
-
+ 
 const CATEGORY_ICONS = { heritage:'🏛', festivals:'🎭', art:'🎨', culture:'🍛', villages:'🏘' };
 const CATEGORY_COLORS = { heritage:'#8A5A34', festivals:'#9C4A63', art:'#4A6B8A', culture:'#BF5B34', villages:'#33513E' };
 const CATEGORIES = [
@@ -1456,7 +1473,7 @@ const CATEGORIES = [
   {id:'culture', name_en:'Culture', name_hi:'संस्कृति', icon:'🍛'},
   {id:'villages', name_en:'Heritage Villages', name_hi:'विरासत गांव', icon:'🏘'},
 ];
-
+ 
 const SEED_DESTINATIONS = [
   {
     id:'d1', slug:'nalanda-mahavihara', name_en:'Nalanda Mahavihara', name_hi:'नालंदा महाविहार',
@@ -1641,7 +1658,7 @@ const SEED_DESTINATIONS = [
     ]
   },
 ];
-
+ 
 /* ---------------- state & data loading ---------------- */
 let STATE = {
   lang: 'en',
@@ -1652,7 +1669,7 @@ let STATE = {
   admin: { loggedIn: !!getAdminToken() },
   importDraft: { rows:null, step:1 },
 };
-
+ 
 async function loadData(){
   try{
     STATE.destinations = STATE.admin.loggedIn
@@ -1663,13 +1680,13 @@ async function loadData(){
     showToast('⚠ ' + e.message);
   }
 }
-
+ 
 function parseHash(){
   const h = location.hash.replace('#','') || '/';
   return h;
 }
 window.addEventListener('hashchange', () => { STATE.route = parseHash(); render(); });
-
+ 
 /* ---------------- helpers ---------------- */
 function t(obj, field){ return obj[field + '_' + STATE.lang] ?? obj[field + '_en'] ?? ''; }
 function categoryMeta(id){ return CATEGORIES.find(c=>c.id===id) || CATEGORIES[0]; }
@@ -1697,7 +1714,121 @@ function publishedDestinations(){ return STATE.destinations.filter(d=>d.status==
 function findBySlug(slug){ return STATE.destinations.find(d=>d.slug===slug); }
 function findById(id){ return STATE.destinations.find(d=>d.id===id); }
 function uniqueStates(){ return [...new Set(STATE.destinations.map(d=>d.state))]; }
-
+ 
+/* ---------------- reviews & comments (stored locally per browser) ---------------- */
+function reviewsKey(slug){ return 'hi_reviews_' + slug; }
+function commentsKey(slug){ return 'hi_comments_' + slug; }
+function loadList(key){
+  try{ return JSON.parse(localStorage.getItem(key) || '[]'); }catch(e){ return []; }
+}
+function saveList(key, list){
+  try{ localStorage.setItem(key, JSON.stringify(list)); }catch(e){ /* storage blocked */ }
+}
+function getReviews(slug){ return loadList(reviewsKey(slug)); }
+function getComments(slug){ return loadList(commentsKey(slug)); }
+function avgRating(reviews){
+  if(!reviews.length) return 0;
+  return reviews.reduce((sum,r)=>sum+(r.rating||0),0) / reviews.length;
+}
+function starString(rating){
+  const full = Math.round(rating);
+  return '★★★★★☆☆☆☆☆'.slice(5-full, 10-full);
+}
+function timeAgo(iso){
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs/60000);
+  if(mins < 1) return 'just now';
+  if(mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins/60);
+  if(hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs/24);
+  if(days < 30) return days + 'd ago';
+  return new Date(iso).toLocaleDateString();
+}
+window.STAR_INPUT_VALUE = 5;
+window.setStarInput = function(slug, val){
+  window.STAR_INPUT_VALUE = val;
+  const wrap = document.getElementById('starInput_' + slug);
+  if(!wrap) return;
+  [...wrap.children].forEach((el,i)=>{ el.textContent = (i < val) ? '★' : '☆'; });
+};
+window.submitReview = function(slug){
+  const nameEl = document.getElementById('reviewName_' + slug);
+  const textEl = document.getElementById('reviewText_' + slug);
+  const name = (nameEl.value || '').trim();
+  const text = (textEl.value || '').trim();
+  const rating = window.STAR_INPUT_VALUE || 5;
+  if(!name || !text){ showToast('⚠ Please add your name and a short review.'); return; }
+  const reviews = getReviews(slug);
+  reviews.unshift({ name: escapeHtml(name), text: escapeHtml(text), rating, date: new Date().toISOString() });
+  saveList(reviewsKey(slug), reviews);
+  window.STAR_INPUT_VALUE = 5;
+  renderApp();
+  showToast('✓ Thanks for your review!');
+};
+window.submitComment = function(slug){
+  const nameEl = document.getElementById('commentName_' + slug);
+  const textEl = document.getElementById('commentText_' + slug);
+  const name = (nameEl.value || '').trim();
+  const text = (textEl.value || '').trim();
+  if(!name || !text){ showToast('⚠ Please add your name and a comment.'); return; }
+  const comments = getComments(slug);
+  comments.unshift({ name: escapeHtml(name), text: escapeHtml(text), date: new Date().toISOString() });
+  saveList(commentsKey(slug), comments);
+  renderApp();
+  showToast('✓ Comment posted!');
+};
+function reviewsAndCommentsSection(d, L){
+  const reviews = getReviews(d.slug);
+  const comments = getComments(d.slug);
+  const avg = avgRating(reviews);
+  const reviewCards = reviews.map(r=>`
+    <div class="source-card" style="align-items:flex-start;flex-direction:column;gap:4px;">
+      <div style="display:flex;justify-content:space-between;width:100%;">
+        <span class="org">${r.name}</span>
+        <span style="color:var(--gold);font-size:0.85rem;">${starString(r.rating)}</span>
+      </div>
+      <div class="sub" style="font-size:0.85rem;color:var(--charcoal);">${r.text}</div>
+      <div class="sub" style="font-size:0.7rem;">${timeAgo(r.date)}</div>
+    </div>`).join('');
+  const commentCards = comments.map(c=>`
+    <div class="source-card" style="align-items:flex-start;flex-direction:column;gap:4px;">
+      <div class="org">${c.name}</div>
+      <div class="sub" style="font-size:0.85rem;color:var(--charcoal);">${c.text}</div>
+      <div class="sub" style="font-size:0.7rem;">${timeAgo(c.date)}</div>
+    </div>`).join('');
+  return `
+    <div class="prose" data-hi="${L==='hi'}" style="margin-top:32px;">
+      <h2>⭐ ${L==='hi'?'रेटिंग और समीक्षाएं':'Ratings & Reviews'}</h2>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <span style="font-size:1.6rem;color:var(--gold);">${starString(avg)}</span>
+        <span style="color:var(--charcoal-soft);font-size:0.85rem;">${avg ? avg.toFixed(1) : '—'} (${reviews.length} ${L==='hi'?'समीक्षाएं':'review'+(reviews.length===1?'':'s')})</span>
+      </div>
+      <div class="side-card" style="max-width:520px;">
+        <h3>${L==='hi'?'अपनी समीक्षा लिखें':'Write a Review'}</h3>
+        <div class="form-group"><label>${L==='hi'?'नाम':'Your Name'}</label><input id="reviewName_${d.slug}" type="text" placeholder="${L==='hi'?'आपका नाम':'Your name'}"/></div>
+        <div class="form-group">
+          <label>${L==='hi'?'रेटिंग':'Rating'}</label>
+          <div id="starInput_${d.slug}" style="font-size:1.4rem;color:var(--gold);cursor:pointer;letter-spacing:2px;">
+            ${[1,2,3,4,5].map(i=>`<span onclick="setStarInput('${d.slug}',${i})">★</span>`).join('')}
+          </div>
+        </div>
+        <div class="form-group"><label>${L==='hi'?'समीक्षा':'Review'}</label><textarea id="reviewText_${d.slug}" placeholder="${L==='hi'?'अपना अनुभव साझा करें...':'Share your experience...'}"></textarea></div>
+        <button class="btn btn-primary btn-sm" onclick="submitReview('${d.slug}')">${L==='hi'?'समीक्षा सबमिट करें':'Submit Review'}</button>
+      </div>
+      ${reviewCards || `<div style="font-size:0.85rem;color:var(--charcoal-soft);margin-top:10px;">${L==='hi'?'अभी तक कोई समीक्षा नहीं। पहली समीक्षा लिखें!':'No reviews yet. Be the first to review!'}</div>`}
+ 
+      <h2 style="margin-top:32px;">💬 ${L==='hi'?'टिप्पणियाँ':'Comments'}</h2>
+      <div class="side-card" style="max-width:520px;">
+        <h3>${L==='hi'?'चर्चा में शामिल हों':'Join the Discussion'}</h3>
+        <div class="form-group"><label>${L==='hi'?'नाम':'Your Name'}</label><input id="commentName_${d.slug}" type="text" placeholder="${L==='hi'?'आपका नाम':'Your name'}"/></div>
+        <div class="form-group"><label>${L==='hi'?'टिप्पणी':'Comment'}</label><textarea id="commentText_${d.slug}" placeholder="${L==='hi'?'एक सवाल पूछें या सुझाव साझा करें...':'Ask a question or share a tip...'}"></textarea></div>
+        <button class="btn btn-primary btn-sm" onclick="submitComment('${d.slug}')">${L==='hi'?'टिप्पणी पोस्ट करें':'Post Comment'}</button>
+      </div>
+      ${commentCards || `<div style="font-size:0.85rem;color:var(--charcoal-soft);margin-top:10px;">${L==='hi'?'अभी तक कोई टिप्पणी नहीं।':'No comments yet.'}</div>`}
+    </div>`;
+}
+ 
 /* ---------------- layout ---------------- */
 function navLink(href, label, activePrefix){
   const active = STATE.route === activePrefix || STATE.route.startsWith(activePrefix + '/') ? 'active' : '';
@@ -1746,12 +1877,23 @@ function layout(content, opts={}){
           <a href="#/explore">Responsible Tourism</a>
           <a href="#/admin">Admin</a>
         </div>
+        <div class="footer-contact">
+          <a href="tel:+911234567890"><i class="fa-solid fa-phone"></i> +91 12345 67890</a>
+          <a href="mailto:hello@hiddenindia.example"><i class="fa-solid fa-envelope"></i> hello@hiddenindia.example</a>
+        </div>
+        <div class="footer-social">
+          <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Facebook" title="Facebook"><i class="fa-brands fa-facebook"></i></a>
+          <a href="#" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" title="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
+          <a href="#" target="_blank" rel="noopener noreferrer" aria-label="YouTube" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+          <a href="#" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+        </div>
         <div class="footer-bottom">© Hidden India — a heritage discovery demo. Verified with ASI, Ministry of Culture and state tourism sources.</div>
       </div>
     </footer>
   </div>`;
 }
-
+ 
 /* ---------------- views: HOME ---------------- */
 function viewHome(){
   const L = STATE.lang;
@@ -1779,12 +1921,12 @@ function viewHome(){
       </div>
     </div>
   </section>
-
+ 
   <section class="section wrap">
     <div class="section-head"><h2>${L==='hi'?'अनुभव के अनुसार खोजें':'Explore by Experience'}</h2></div>
     <div class="chips">${chips}</div>
   </section>
-
+ 
   <section class="section wrap" style="padding-top:0;">
     <div class="section-head">
       <h2>${L==='hi'?'चुनिंदा गंतव्य':'Featured Destinations'}</h2>
@@ -1792,7 +1934,7 @@ function viewHome(){
     </div>
     ${featured.length ? `<div class="grid">${cards}</div>` : emptyState(L==='hi'?'अभी कोई प्रकाशित गंतव्य नहीं':'No published destinations yet')}
   </section>
-
+ 
   <section class="section wrap" style="padding-top:0;">
     <div class="why-grid">
       <div class="why-card"><div class="why-num">01</div><h3>${L==='hi'?'खोजें':'Discover'}</h3><p>${L==='hi'?'मुख्यधारा के पर्यटन से परे सांस्कृतिक रूप से महत्वपूर्ण स्थानों को खोजें।':'Find culturally important places beyond mainstream tourism.'}</p></div>
@@ -1802,7 +1944,7 @@ function viewHome(){
   </section>
   `;
 }
-
+ 
 function cardHtml(d){
   const L = STATE.lang;
   const color = CATEGORY_COLORS[d.category] || '#8A5A34';
@@ -1827,14 +1969,14 @@ function cardHtml(d){
 function emptyState(msg){
   return `<div class="empty"><div class="em">🗺️</div><div>${msg}</div></div>`;
 }
-
+ 
 /* ---------------- views: EXPLORE ---------------- */
 function viewExplore(){
   const L = STATE.lang;
   const qs = new URLSearchParams(STATE.route.split('?')[1] || '');
   if(qs.get('q') !== null) STATE.filters.search = qs.get('q');
   if(qs.get('cat') !== null && qs.get('cat') !== 'all') STATE.filters.category = qs.get('cat');
-
+ 
   let list = publishedDestinations();
   const f = STATE.filters;
   if(f.search) list = list.filter(d => (t(d,'name')+d.state+d.district).toLowerCase().includes(f.search.toLowerCase()));
@@ -1842,10 +1984,10 @@ function viewExplore(){
   if(f.category) list = list.filter(d => d.category === f.category);
   if(f.sort === 'name') list.sort((a,b)=> t(a,'name').localeCompare(t(b,'name')));
   if(f.sort === 'state') list.sort((a,b)=> a.state.localeCompare(b.state));
-
+ 
   const stateOptions = uniqueStates().map(s=>`<option value="${s}" ${f.state===s?'selected':''}>${s}</option>`).join('');
   const catOptions = CATEGORIES.map(c=>`<option value="${c.id}" ${f.category===c.id?'selected':''}>${L==='hi'?c.name_hi:c.name_en}</option>`).join('');
-
+ 
   return `
   <section class="wrap section">
     <div class="section-head"><h2>${L==='hi'?'भारत की विरासत का अन्वेषण करें':"Explore India's Heritage"}</h2></div>
@@ -1881,7 +2023,7 @@ window.updateFilter = function(key, val){
   setTimeout(()=>{ const el=document.getElementById('fSearch'); if(el && key==='search'){ el.focus(); el.setSelectionRange(el.value.length, el.value.length);} }, 0);
 };
 window.clearFilters = function(){ STATE.filters = {search:'', state:'', category:'', sort:'name'}; renderApp(); };
-
+ 
 /* ---------------- views: MAP ---------------- */
 function viewMap(){
   const L = STATE.lang;
@@ -1973,7 +2115,7 @@ function initMap(){
     el.innerHTML = `<div style="padding:24px;font-size:0.85rem;color:var(--charcoal-soft);">${STATE.lang==='hi'?'मानचित्र लोड नहीं हो सका। कृपया अपना इंटरनेट कनेक्शन जांचें।':'Map failed to load. Please check your internet connection.'}</div>`;
   });
 }
-
+ 
 /* ---------------- views: DESTINATION DETAIL ---------------- */
 function viewDestination(slug){
   const L = STATE.lang;
@@ -2033,6 +2175,7 @@ function viewDestination(slug){
         <div class="gallery-grid">
           ${d.images.map(img=>`<img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.alt||t(d,'name'))}" onclick="openImageLightbox(this.src)"/>`).join('')}
         </div>` : ''}
+        ${reviewsAndCommentsSection(d, L)}
       </div>
       <div class="sidebar">
         <div class="side-card">
@@ -2052,7 +2195,7 @@ function viewDestination(slug){
     </div>
   </div>`;
 }
-
+ 
 /* ---------------- ADMIN: login ---------------- */
 function viewAdminLogin(loginError){
   return `
@@ -2094,7 +2237,7 @@ window.adminLogout = async function(){
   await loadData();
   location.hash = '/admin';
 };
-
+ 
 /* ---------------- ADMIN: shell ---------------- */
 function adminTab(href,label){
   const active = STATE.route === href ? 'active' : '';
@@ -2117,7 +2260,7 @@ function adminLayout(content){
     <div class="admin-body">${content}</div>
   </div>`;
 }
-
+ 
 function viewAdminDashboard(){
   const total = STATE.destinations.length;
   const published = STATE.destinations.filter(d=>d.status==='published').length;
@@ -2153,7 +2296,7 @@ function viewAdminDashboard(){
     </div>
   `);
 }
-
+ 
 function viewAdminDestinations(){
   const list = STATE.destinations;
   return adminLayout(`
@@ -2183,7 +2326,7 @@ function viewAdminDestinations(){
     </div>
   `);
 }
-
+ 
 window.togglePublish = async function(id){
   const d = findById(id); if(!d) return;
   const newStatus = d.status==='published' ? 'draft' : 'published';
@@ -2203,7 +2346,7 @@ window.deleteDestination = async function(id){
     showToast('Destination deleted.');
   }catch(e){ showToast('⚠ ' + e.message); }
 };
-
+ 
 /* ---------------- ADMIN: destination form modal ---------------- */
 window.openDestinationModal = function(id){
   const d = id ? findById(id) : null;
@@ -2234,7 +2377,7 @@ window.openDestinationModal = function(id){
       <input placeholder="Short note" value="${escapeHtml(n.note||'')}" data-nearby-note/>
       <button type="button" class="remove-row" onclick="this.closest('[data-nearby-row]').remove()">✕</button>
     </div>`).join('');
-
+ 
   const modalHtml = `
   <div class="modal-overlay" id="destModalOverlay" onclick="if(event.target===this) closeModal()">
     <div class="modal">
@@ -2256,7 +2399,7 @@ window.openDestinationModal = function(id){
           <div class="form-group"><label>Latitude</label><input name="lat" type="number" step="any" required value="${v.lat}"/></div>
           <div class="form-group"><label>Longitude</label><input name="lng" type="number" step="any" required value="${v.lng}"/></div>
         </div>
-
+ 
         <div class="form-section-title">Images</div>
         <div class="form-grid">
           <div class="form-group">
@@ -2279,7 +2422,7 @@ window.openDestinationModal = function(id){
             <div id="galleryUploadStatus" class="upload-progress"></div>
           </div>
         </div>
-
+ 
         <div class="form-section-title">Content</div>
         <div class="form-grid">
           <div class="form-group"><label>Short Description (EN)</label><textarea name="short_en" required>${escapeHtml(v.short_en)}</textarea></div>
@@ -2296,15 +2439,15 @@ window.openDestinationModal = function(id){
         <div class="form-section-title">Responsible Tourism Tips</div>
         <div id="tipsList">${tipsHtml}</div>
         <button type="button" class="btn btn-ghost btn-sm" onclick="addDynamicRow('tipsList','tip')">+ Add Tip</button>
-
+ 
         <div class="form-section-title">Verified Sources</div>
         <div id="sourcesList">${sourcesHtml}</div>
         <button type="button" class="btn btn-ghost btn-sm" onclick="addDynamicRow('sourcesList','source')">+ Add Source</button>
-
+ 
         <div class="form-section-title">Nearby Places</div>
         <div id="nearbyList2">${nearbyHtml}</div>
         <button type="button" class="btn btn-ghost btn-sm" onclick="addDynamicRow('nearbyList2','nearby')">+ Add Nearby Place</button>
-
+ 
         <div class="form-section-title">Publishing</div>
         <div class="form-grid">
           <div class="form-group"><label>Status</label><select name="status"><option value="draft" ${v.status==='draft'?'selected':''}>Draft</option><option value="published" ${v.status==='published'?'selected':''}>Published</option></select></div>
@@ -2417,7 +2560,7 @@ function renderGalleryGrid(){
     `<div class="gallery-thumb" data-gallery-idx="${i}"><img src="${img.url}"/><button type="button" class="img-remove-btn" onclick="removeGalleryImage(${i})">✕</button></div>`
   ).join('') + `<div class="gallery-add-btn" onclick="document.getElementById('galleryFileInput').click()">+</div>`;
 }
-
+ 
 window.closeModal = function(){ const m = document.getElementById('destModalOverlay'); if(m) m.remove(); window.__modalImages = null; };
 window.toggleMobileNav = function(){
   const panel = document.getElementById('mobileNavPanel');
@@ -2447,7 +2590,7 @@ window.openImageLightbox = function(src){
 window.closeImageLightbox = function(){
   const o = document.getElementById('imgLightboxOverlay'); if(o) o.remove();
 };
-
+ 
 window.saveDestination = async function(e, id){
   e.preventDefault();
   const f = e.target;
@@ -2465,7 +2608,7 @@ window.saveDestination = async function(e, id){
     distance: r.querySelector('[data-nearby-distance]').value.trim(),
     note: r.querySelector('[data-nearby-note]').value.trim(),
   })).filter(n=>n.name);
-
+ 
   const data = {
     name_en: fd.get('name_en').trim(), name_hi: fd.get('name_hi').trim(),
     state: fd.get('state').trim(), district: fd.get('district').trim(),
@@ -2487,7 +2630,7 @@ window.saveDestination = async function(e, id){
   if(isNaN(data.lat) || isNaN(data.lng)){ alert('Latitude and longitude must be valid numbers.'); return false; }
   const approxSize = JSON.stringify(data).length;
   if(approxSize > 4200000){ alert('These images are too large to save (over ~4MB total). Please remove a photo or use smaller files.'); return false; }
-
+ 
   try{
     if(id){
       await apiFetch(`/api/admin/destinations/${id}`, { method:'PUT', body: JSON.stringify(data) });
@@ -2503,7 +2646,7 @@ window.saveDestination = async function(e, id){
   }
   return false;
 };
-
+ 
 /* ---------------- ADMIN: import ---------------- */
 const IMPORT_COLUMNS = ['name_en','name_hi','state','district','category','latitude','longitude','short_description_en','short_description_hi','description_en','description_hi','best_time_en','cover_image','verified'];
 function viewAdminImport(){
@@ -2622,14 +2765,14 @@ window.confirmImport = async function(){
     showToast('⚠ ' + e.message);
   }
 };
-
+ 
 /* ---------------- router / render ---------------- */
 function currentPath(){ return STATE.route.split('?')[0]; }
-
+ 
 function renderApp(loginError){
   const path = currentPath();
   let content;
-
+ 
   if(path.startsWith('/admin')){
     if(!STATE.admin.loggedIn){ content = viewAdminLogin(loginError); }
     else if(path === '/admin' || path === '/admin/dashboard') content = viewAdminDashboard();
@@ -2647,7 +2790,7 @@ function renderApp(loginError){
   } else {
     content = layout(`<div class="wrap section">${emptyState('Page not found')}</div>`);
   }
-
+ 
   document.getElementById('app').innerHTML = content;
   if(path === '/map') initMap();
   if(path === '/admin/import') renderImportPreview();
@@ -2655,10 +2798,11 @@ function renderApp(loginError){
 }
 function render(){ renderApp(); }
 window.setLang = function(l){ STATE.lang = l; renderApp(); };
-
+ 
 /* ---------------- boot ---------------- */
 (async function boot(){
   document.getElementById('app').innerHTML = `<div class="wrap section"><div class="skeleton" style="height:40px;width:240px;margin-bottom:20px;"></div><div class="grid">${'<div class="skeleton" style="height:220px;"></div>'.repeat(3)}</div></div>`;
   await loadData();
   render();
 })();
+ 
