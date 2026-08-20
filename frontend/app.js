@@ -70,6 +70,11 @@
 
 
 
+
+
+
+
+
 // /* =========================================================
 //    HIDDEN INDIA — client-side demo app
 //    Data persists via window.storage (per-browser, personal).
@@ -1382,32 +1387,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* =========================================================
    HIDDEN INDIA — client-side demo app
    Data persists via window.storage (per-browser, personal).
@@ -2009,6 +1988,14 @@ function viewDestination(slug){
       <div><div class="org">${escapeHtml(s.organization)}</div><div class="sub">${escapeHtml(s.title)}</div></div>
       <a class="btn btn-ghost btn-sm" href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer">↗</a>
     </div>`).join('');
+  const nearby = (d.nearby||[]).map(n=>`
+    <div class="source-card">
+      <div>
+        <div class="org">${escapeHtml(n.name)}</div>
+        <div class="sub">${escapeHtml(n.note||'')}</div>
+      </div>
+      ${n.distance ? `<span style="font-size:0.78rem;font-weight:700;color:var(--terracotta-deep);white-space:nowrap;">${escapeHtml(n.distance)}</span>` : ''}
+    </div>`).join('');
   return `
   <div class="wrap section">
     <div class="breadcrumb"><a href="#/">Home</a> / <a href="#/explore">Explore</a> / ${escapeHtml(t(d,'name'))}</div>
@@ -2056,6 +2043,10 @@ function viewDestination(slug){
           <h3>📚 ${L==='hi'?'सत्यापित जानकारी':'Verified Information'}</h3>
           ${d.verified ? `<div class="verified-strip">✓ ${L==='hi'?'सत्यापित सूत्रों से संकलित':'Compiled from verified sources'}</div>` : ''}
           ${sources || `<div style="font-size:0.85rem;color:var(--charcoal-soft);">${L==='hi'?'कोई सूत्र दर्ज नहीं':'No sources recorded'}</div>`}
+        </div>
+        <div class="side-card">
+          <h3>📍 ${L==='hi'?'आस-पास के प्रसिद्ध स्थान':'Nearby Places'}</h3>
+          ${nearby || `<div style="font-size:0.85rem;color:var(--charcoal-soft);">${L==='hi'?'अभी कोई आस-पास का स्थान दर्ज नहीं किया गया':'No nearby places added yet.'}</div>`}
         </div>
       </div>
     </div>
@@ -2220,7 +2211,7 @@ window.openDestinationModal = function(id){
   const v = d || {name_en:'',name_hi:'',state:'',district:'',category:'heritage',lat:'',lng:'',
     short_en:'',short_hi:'',about_en:'',about_hi:'',history_en:'',history_hi:'',culture_en:'',culture_hi:'',
     best_time_en:'',best_time_hi:'',cover_image:'', status:'draft', verified:false,
-    tips:[{en:'',hi:''}], sources:[{organization:'',title:'',url:''}]};
+    tips:[{en:'',hi:''}], sources:[{organization:'',title:'',url:''}], nearby:[{name:'',distance:'',note:''}]};
   window.__modalImages = { cover: v.cover_image || '', gallery: JSON.parse(JSON.stringify(v.images||[])) };
   const catOpts = CATEGORIES.map(c=>`<option value="${c.id}" ${v.category===c.id?'selected':''}>${c.name_en}</option>`).join('');
   const tipsHtml = v.tips.map((tp,i)=>`
@@ -2235,6 +2226,13 @@ window.openDestinationModal = function(id){
       <input placeholder="Title" value="${escapeHtml(s.title)}" data-src-title/>
       <input placeholder="URL" value="${escapeHtml(s.url)}" data-src-url/>
       <button type="button" class="remove-row" onclick="this.closest('[data-source-row]').remove()">✕</button>
+    </div>`).join('');
+  const nearbyHtml = (v.nearby||[]).map((n,i)=>`
+    <div class="dynamic-row" data-nearby-row>
+      <input placeholder="Place name" value="${escapeHtml(n.name)}" data-nearby-name/>
+      <input placeholder="Distance (e.g. 12 km)" value="${escapeHtml(n.distance||'')}" data-nearby-distance/>
+      <input placeholder="Short note" value="${escapeHtml(n.note||'')}" data-nearby-note/>
+      <button type="button" class="remove-row" onclick="this.closest('[data-nearby-row]').remove()">✕</button>
     </div>`).join('');
 
   const modalHtml = `
@@ -2303,6 +2301,10 @@ window.openDestinationModal = function(id){
         <div id="sourcesList">${sourcesHtml}</div>
         <button type="button" class="btn btn-ghost btn-sm" onclick="addDynamicRow('sourcesList','source')">+ Add Source</button>
 
+        <div class="form-section-title">Nearby Places</div>
+        <div id="nearbyList2">${nearbyHtml}</div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="addDynamicRow('nearbyList2','nearby')">+ Add Nearby Place</button>
+
         <div class="form-section-title">Publishing</div>
         <div class="form-grid">
           <div class="form-group"><label>Status</label><select name="status"><option value="draft" ${v.status==='draft'?'selected':''}>Draft</option><option value="published" ${v.status==='published'?'selected':''}>Published</option></select></div>
@@ -2324,6 +2326,9 @@ window.addDynamicRow = function(listId, kind){
   if(kind==='tip'){
     row.className='dynamic-row'; row.setAttribute('data-tip-row','');
     row.innerHTML = `<input placeholder="Tip (English)" data-tip-en/><input placeholder="Tip (Hindi)" data-tip-hi/><button type="button" class="remove-row" onclick="this.closest('[data-tip-row]').remove()">✕</button>`;
+  } else if(kind==='nearby'){
+    row.className='dynamic-row'; row.setAttribute('data-nearby-row','');
+    row.innerHTML = `<input placeholder="Place name" data-nearby-name/><input placeholder="Distance (e.g. 12 km)" data-nearby-distance/><input placeholder="Short note" data-nearby-note/><button type="button" class="remove-row" onclick="this.closest('[data-nearby-row]').remove()">✕</button>`;
   } else {
     row.className='dynamic-row'; row.setAttribute('data-source-row','');
     row.innerHTML = `<input placeholder="Organization" data-src-org/><input placeholder="Title" data-src-title/><input placeholder="URL" data-src-url/><button type="button" class="remove-row" onclick="this.closest('[data-source-row]').remove()">✕</button>`;
@@ -2455,6 +2460,11 @@ window.saveDestination = async function(e, id){
     title: r.querySelector('[data-src-title]').value.trim(),
     url: r.querySelector('[data-src-url]').value.trim(),
   })).filter(s=>s.organization);
+  const nearby = [...document.querySelectorAll('[data-nearby-row]')].map(r=>({
+    name: r.querySelector('[data-nearby-name]').value.trim(),
+    distance: r.querySelector('[data-nearby-distance]').value.trim(),
+    note: r.querySelector('[data-nearby-note]').value.trim(),
+  })).filter(n=>n.name);
 
   const data = {
     name_en: fd.get('name_en').trim(), name_hi: fd.get('name_hi').trim(),
@@ -2471,7 +2481,7 @@ window.saveDestination = async function(e, id){
     cover_image: (window.__modalImages && window.__modalImages.cover) || '',
     images: (window.__modalImages && window.__modalImages.gallery) || [],
     status: fd.get('status'), verified: fd.get('verified') === 'on',
-    tips, sources,
+    tips, sources, nearby,
   };
   if(fd.get('category') === '__custom__' && !data.category){ alert('Please type a name for the new category.'); return false; }
   if(isNaN(data.lat) || isNaN(data.lng)){ alert('Latitude and longitude must be valid numbers.'); return false; }
