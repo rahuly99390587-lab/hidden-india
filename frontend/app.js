@@ -1717,7 +1717,6 @@ function uniqueStates(){ return [...new Set(STATE.destinations.map(d=>d.state))]
  
 /* ---------------- reviews & comments (stored locally per browser) ---------------- */
 function reviewsKey(slug){ return 'hi_reviews_' + slug; }
-function commentsKey(slug){ return 'hi_comments_' + slug; }
 function loadList(key){
   try{ return JSON.parse(localStorage.getItem(key) || '[]'); }catch(e){ return []; }
 }
@@ -1725,7 +1724,6 @@ function saveList(key, list){
   try{ localStorage.setItem(key, JSON.stringify(list)); }catch(e){ /* storage blocked */ }
 }
 function getReviews(slug){ return loadList(reviewsKey(slug)); }
-function getComments(slug){ return loadList(commentsKey(slug)); }
 function avgRating(reviews){
   if(!reviews.length) return 0;
   return reviews.reduce((sum,r)=>sum+(r.rating||0),0) / reviews.length;
@@ -1766,21 +1764,8 @@ window.submitReview = function(slug){
   renderApp();
   showToast('✓ Thanks for your review!');
 };
-window.submitComment = function(slug){
-  const nameEl = document.getElementById('commentName_' + slug);
-  const textEl = document.getElementById('commentText_' + slug);
-  const name = (nameEl.value || '').trim();
-  const text = (textEl.value || '').trim();
-  if(!name || !text){ showToast('⚠ Please add your name and a comment.'); return; }
-  const comments = getComments(slug);
-  comments.unshift({ name: escapeHtml(name), text: escapeHtml(text), date: new Date().toISOString() });
-  saveList(commentsKey(slug), comments);
-  renderApp();
-  showToast('✓ Comment posted!');
-};
 function reviewsAndCommentsSection(d, L){
   const reviews = getReviews(d.slug);
-  const comments = getComments(d.slug);
   const avg = avgRating(reviews);
   const reviewCards = reviews.map(r=>`
     <div class="source-card" style="align-items:flex-start;flex-direction:column;gap:4px;">
@@ -1790,12 +1775,6 @@ function reviewsAndCommentsSection(d, L){
       </div>
       <div class="sub" style="font-size:0.85rem;color:var(--charcoal);">${r.text}</div>
       <div class="sub" style="font-size:0.7rem;">${timeAgo(r.date)}</div>
-    </div>`).join('');
-  const commentCards = comments.map(c=>`
-    <div class="source-card" style="align-items:flex-start;flex-direction:column;gap:4px;">
-      <div class="org">${c.name}</div>
-      <div class="sub" style="font-size:0.85rem;color:var(--charcoal);">${c.text}</div>
-      <div class="sub" style="font-size:0.7rem;">${timeAgo(c.date)}</div>
     </div>`).join('');
   return `
     <div class="prose" data-hi="${L==='hi'}" style="margin-top:32px;">
@@ -1818,14 +1797,6 @@ function reviewsAndCommentsSection(d, L){
       </div>
       ${reviewCards || `<div style="font-size:0.85rem;color:var(--charcoal-soft);margin-top:10px;">${L==='hi'?'अभी तक कोई समीक्षा नहीं। पहली समीक्षा लिखें!':'No reviews yet. Be the first to review!'}</div>`}
  
-      <h2 style="margin-top:32px;">💬 ${L==='hi'?'टिप्पणियाँ':'Comments'}</h2>
-      <div class="side-card" style="max-width:520px;">
-        <h3>${L==='hi'?'चर्चा में शामिल हों':'Join the Discussion'}</h3>
-        <div class="form-group"><label>${L==='hi'?'नाम':'Your Name'}</label><input id="commentName_${d.slug}" type="text" placeholder="${L==='hi'?'आपका नाम':'Your name'}"/></div>
-        <div class="form-group"><label>${L==='hi'?'टिप्पणी':'Comment'}</label><textarea id="commentText_${d.slug}" placeholder="${L==='hi'?'एक सवाल पूछें या सुझाव साझा करें...':'Ask a question or share a tip...'}"></textarea></div>
-        <button class="btn btn-primary btn-sm" onclick="submitComment('${d.slug}')">${L==='hi'?'टिप्पणी पोस्ट करें':'Post Comment'}</button>
-      </div>
-      ${commentCards || `<div style="font-size:0.85rem;color:var(--charcoal-soft);margin-top:10px;">${L==='hi'?'अभी तक कोई टिप्पणी नहीं।':'No comments yet.'}</div>`}
     </div>`;
 }
  
@@ -1878,7 +1849,7 @@ function layout(content, opts={}){
           <a href="#/admin">Admin</a>
         </div>
         <div class="footer-contact">
-          <a href="tel:+911234567890"><i class="fa-solid fa-phone"></i> +91 12345 67890</a>
+          <a href="tel:+911234567890"><i class="fa-solid fa-phone"></i> +91 1234567890</a>
           <a href="mailto:hello@hiddenindia.example"><i class="fa-solid fa-envelope"></i> hello@hiddenindia.example</a>
         </div>
         <div class="footer-social">
