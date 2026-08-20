@@ -29,7 +29,7 @@ function loadGoogleMaps(){
    ⚠️ Set this to your deployed backend's URL, e.g.
       'https://hidden-india-api.onrender.com' — no trailing slash.
    ========================================================= */
-const API_BASE_URL = 'http://localhost:4000';
+const API_BASE_URL = 'https://hidden-india.onrender.com';
 const ADMIN_TOKEN_KEY = 'hidden-india-admin-token';
 function getAdminToken(){ try{ return sessionStorage.getItem(ADMIN_TOKEN_KEY); }catch(e){ return null; } }
 function setAdminToken(t){ try{ if(t) sessionStorage.setItem(ADMIN_TOKEN_KEY, t); else sessionStorage.removeItem(ADMIN_TOKEN_KEY); }catch(e){ /* blocked */ } }
