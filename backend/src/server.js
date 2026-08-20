@@ -65,6 +65,7 @@
 
 
 require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -76,12 +77,16 @@ const adminRoutes = require('./routes/admin');
 
 const app = express();
 
-// Trust Render's reverse proxy
+// Render reverse proxy ke liye
 app.set('trust proxy', 1);
 
 app.use(helmet());
-app.use(express.json({ limit: '2mb' }));
 
+app.use(express.json({
+  limit: '2mb',
+}));
+
+// CORS
 const allowedOrigins = (process.env.CORS_ORIGINS || '')
   .split(',')
   .map((s) => s.trim())
@@ -95,26 +100,41 @@ app.use(cors({
 app.use(rateLimit({
   windowMs: 60 * 1000,
   limit: 120,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
 }));
 
+// Health check
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true });
+  res.json({
+    ok: true,
+    message: 'Hidden India API is running',
+  });
 });
 
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api', publicRoutes);
 app.use('/api/admin', adminRoutes);
 
+// 404
 app.use((req, res) => {
-  res.status(404).json({ error: 'Not found' });
+  res.status(404).json({
+    error: 'Not found',
+  });
 });
 
+// Error handler
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   console.error(err);
-  res.status(500).json({ error: 'Internal server error' });
+
+  res.status(500).json({
+    error: 'Internal server error',
+  });
 });
 
+// Server
 const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {
