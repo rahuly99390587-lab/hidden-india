@@ -95,15 +95,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
 // /* =========================================================
 //    HIDDEN INDIA — client-side demo app
 //    Data persists via window.storage (per-browser, personal).
@@ -828,6 +819,7 @@
 //     </div>`).join('');
 //   const nearby = (d.nearby||[]).map(n=>`
 //     <div class="source-card">
+//       ${n.image ? `<img src="${escapeHtml(n.image)}" alt="${escapeHtml(n.name)}" class="nearby-thumb" onclick="openImageLightbox(this.src)"/>` : ''}
 //       <div>
 //         <div class="org">${escapeHtml(n.name)}</div>
 //         <div class="sub">${escapeHtml(n.note||'')}</div>
@@ -866,6 +858,14 @@
 //         </div>
 //         <h2>${L==='hi'?'यात्रा का सर्वोत्तम समय':'Best Time to Visit'}</h2>
 //         <p>${escapeHtml(t(d,'best_time'))}</p>
+//         ${(t(d,'food')) ? `
+//         <h2>🍲 ${L==='hi'?'क्या खाएं':'Local Food to Try'}</h2>
+//         ${d.food_image ? `<img src="${escapeHtml(d.food_image)}" alt="food" class="section-photo" onclick="openImageLightbox(this.src)"/>` : ''}
+//         <p>${escapeHtml(t(d,'food'))}</p>` : ''}
+//         ${(t(d,'stay')) ? `
+//         <h2>🛏️ ${L==='hi'?'कहाँ ठहरें':'Where to Stay'}</h2>
+//         ${d.stay_image ? `<img src="${escapeHtml(d.stay_image)}" alt="stay" class="section-photo" onclick="openImageLightbox(this.src)"/>` : ''}
+//         <p>${escapeHtml(t(d,'stay'))}</p>` : ''}
 //         ${(d.images && d.images.length) ? `
 //         <h2>${L==='hi'?'तस्वीरें':'Photos'}</h2>
 //         <div class="gallery-grid">
@@ -887,6 +887,12 @@
 //           <h3>📍 ${L==='hi'?'आस-पास के प्रसिद्ध स्थान':'Nearby Places'}</h3>
 //           ${nearby || `<div style="font-size:0.85rem;color:var(--charcoal-soft);">${L==='hi'?'अभी कोई आस-पास का स्थान दर्ज नहीं किया गया':'No nearby places added yet.'}</div>`}
 //         </div>
+//         ${(t(d,'local_language') || t(d,'budget')) ? `
+//         <div class="side-card">
+//           <h3>ℹ️ ${L==='hi'?'यात्रा जानकारी':'Trip Info'}</h3>
+//           ${t(d,'local_language') ? `<div style="margin-bottom:10px;"><div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--charcoal-soft);margin-bottom:2px;">🗣️ ${L==='hi'?'स्थानीय भाषा':'Local Language'}</div><div style="font-size:0.9rem;">${escapeHtml(t(d,'local_language'))}</div></div>` : ''}
+//           ${t(d,'budget') ? `<div><div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--charcoal-soft);margin-bottom:2px;">💰 ${L==='hi'?'बजट':'Budget'}</div><div style="font-size:0.9rem;">${escapeHtml(t(d,'budget'))}</div></div>` : ''}
+//         </div>` : ''}
 //       </div>
 //     </div>
 //   </div>`;
@@ -1049,9 +1055,17 @@
 //   const isEdit = !!d;
 //   const v = d || {name_en:'',name_hi:'',state:'',district:'',category:'heritage',lat:'',lng:'',
 //     short_en:'',short_hi:'',about_en:'',about_hi:'',history_en:'',history_hi:'',culture_en:'',culture_hi:'',
-//     best_time_en:'',best_time_hi:'',cover_image:'', status:'draft', verified:false,
-//     tips:[{en:'',hi:''}], sources:[{organization:'',title:'',url:''}], nearby:[{name:'',distance:'',note:''}]};
-//   window.__modalImages = { cover: v.cover_image || '', gallery: JSON.parse(JSON.stringify(v.images||[])) };
+//     best_time_en:'',best_time_hi:'',cover_image:'',
+//     food_en:'',food_hi:'',food_image:'',stay_en:'',stay_hi:'',stay_image:'',
+//     local_language_en:'',local_language_hi:'',budget_en:'',budget_hi:'',
+//     status:'draft', verified:false,
+//     tips:[{en:'',hi:''}], sources:[{organization:'',title:'',url:''}], nearby:[{name:'',distance:'',note:'',image:''}]};
+//   window.__modalImages = {
+//     cover: v.cover_image || '',
+//     gallery: JSON.parse(JSON.stringify(v.images||[])),
+//     food: v.food_image || '',
+//     stay: v.stay_image || '',
+//   };
 //   const catOpts = CATEGORIES.map(c=>`<option value="${c.id}" ${v.category===c.id?'selected':''}>${c.name_en}</option>`).join('');
 //   const tipsHtml = v.tips.map((tp,i)=>`
 //     <div class="dynamic-row" data-tip-row>
@@ -1066,13 +1080,7 @@
 //       <input placeholder="URL" value="${escapeHtml(s.url)}" data-src-url/>
 //       <button type="button" class="remove-row" onclick="this.closest('[data-source-row]').remove()">✕</button>
 //     </div>`).join('');
-//   const nearbyHtml = (v.nearby||[]).map((n,i)=>`
-//     <div class="dynamic-row" data-nearby-row>
-//       <input placeholder="Place name" value="${escapeHtml(n.name)}" data-nearby-name/>
-//       <input placeholder="Distance (e.g. 12 km)" value="${escapeHtml(n.distance||'')}" data-nearby-distance/>
-//       <input placeholder="Short note" value="${escapeHtml(n.note||'')}" data-nearby-note/>
-//       <button type="button" class="remove-row" onclick="this.closest('[data-nearby-row]').remove()">✕</button>
-//     </div>`).join('');
+//   const nearbyHtml = (v.nearby||[]).map((n,i)=>nearbyRowHtml(n)).join('');
  
 //   const modalHtml = `
 //   <div class="modal-overlay" id="destModalOverlay" onclick="if(event.target===this) closeModal()">
@@ -1131,7 +1139,44 @@
 //           <div class="form-group"><label>Cultural Significance (HI)</label><textarea name="culture_hi">${escapeHtml(v.culture_hi)}</textarea></div>
 //           <div class="form-group"><label>Best Time to Visit (EN)</label><input name="best_time_en" value="${escapeHtml(v.best_time_en)}"/></div>
 //           <div class="form-group"><label>Best Time to Visit (HI)</label><input name="best_time_hi" value="${escapeHtml(v.best_time_hi)}"/></div>
+//           <div class="form-group"><label>Local Language (EN)</label><input name="local_language_en" placeholder="e.g. Kashmiri, Urdu" value="${escapeHtml(v.local_language_en||'')}"/></div>
+//           <div class="form-group"><label>Local Language (HI)</label><input name="local_language_hi" placeholder="जैसे कश्मीरी, उर्दू" value="${escapeHtml(v.local_language_hi||'')}"/></div>
+//           <div class="form-group"><label>Budget (EN)</label><input name="budget_en" placeholder="e.g. ₹1,500–3,000/day" value="${escapeHtml(v.budget_en||'')}"/></div>
+//           <div class="form-group"><label>Budget (HI)</label><input name="budget_hi" placeholder="जैसे ₹1,500–3,000/दिन" value="${escapeHtml(v.budget_hi||'')}"/></div>
 //         </div>
+
+//         <div class="form-section-title">Food</div>
+//         <div class="form-grid">
+//           <div class="form-group"><label>What to Eat (EN)</label><textarea name="food_en" placeholder="Local dishes worth trying">${escapeHtml(v.food_en||'')}</textarea></div>
+//           <div class="form-group"><label>What to Eat (HI)</label><textarea name="food_hi" placeholder="कोशिश करने लायक स्थानीय व्यंजन">${escapeHtml(v.food_hi||'')}</textarea></div>
+//           <div class="form-group">
+//             <label>Food Photo</label>
+//             <div id="foodUploadBox" class="img-upload-box ${v.food_image?'has-image':''}" onclick="if(event.target.tagName!=='BUTTON') document.getElementById('foodFileInput').click()">
+//               ${v.food_image ? `<img src="${escapeHtml(v.food_image)}" alt="food preview"/><button type="button" class="img-remove-btn" onclick="event.stopPropagation(); removeSingleImage('food')">✕</button>` : `<div class="up-hint">📷<br/>Click to upload a food photo<br/><span style="font-size:0.72rem;">JPG/PNG, auto-resized</span></div>`}
+//             </div>
+//             <input type="file" id="foodFileInput" accept="image/*" style="display:none;" onchange="handleSingleImageFile('food', this.files[0])"/>
+//             <div id="foodUploadStatus" class="upload-progress"></div>
+//             <label style="margin-top:10px;">or paste an image URL</label>
+//             <input id="foodUrlInput" placeholder="https://..." value="${(v.food_image||'').startsWith('data:') ? '' : escapeHtml(v.food_image||'')}" oninput="setImageFromUrl('food', this.value)"/>
+//           </div>
+//         </div>
+
+//         <div class="form-section-title">Stay</div>
+//         <div class="form-grid">
+//           <div class="form-group"><label>Where to Stay (EN)</label><textarea name="stay_en" placeholder="Accommodation options">${escapeHtml(v.stay_en||'')}</textarea></div>
+//           <div class="form-group"><label>Where to Stay (HI)</label><textarea name="stay_hi" placeholder="ठहरने के विकल्प">${escapeHtml(v.stay_hi||'')}</textarea></div>
+//           <div class="form-group">
+//             <label>Stay Photo</label>
+//             <div id="stayUploadBox" class="img-upload-box ${v.stay_image?'has-image':''}" onclick="if(event.target.tagName!=='BUTTON') document.getElementById('stayFileInput').click()">
+//               ${v.stay_image ? `<img src="${escapeHtml(v.stay_image)}" alt="stay preview"/><button type="button" class="img-remove-btn" onclick="event.stopPropagation(); removeSingleImage('stay')">✕</button>` : `<div class="up-hint">📷<br/>Click to upload a stay photo<br/><span style="font-size:0.72rem;">JPG/PNG, auto-resized</span></div>`}
+//             </div>
+//             <input type="file" id="stayFileInput" accept="image/*" style="display:none;" onchange="handleSingleImageFile('stay', this.files[0])"/>
+//             <div id="stayUploadStatus" class="upload-progress"></div>
+//             <label style="margin-top:10px;">or paste an image URL</label>
+//             <input id="stayUrlInput" placeholder="https://..." value="${(v.stay_image||'').startsWith('data:') ? '' : escapeHtml(v.stay_image||'')}" oninput="setImageFromUrl('stay', this.value)"/>
+//           </div>
+//         </div>
+
 //         <div class="form-section-title">Responsible Tourism Tips</div>
 //         <div id="tipsList">${tipsHtml}</div>
 //         <button type="button" class="btn btn-ghost btn-sm" onclick="addDynamicRow('tipsList','tip')">+ Add Tip</button>
@@ -1159,20 +1204,41 @@
 //   </div>`;
 //   document.body.insertAdjacentHTML('beforeend', modalHtml);
 // };
+// function nearbyRowHtml(n){
+//   n = n || {name:'',distance:'',note:'',image:''};
+//   return `
+//     <div class="dynamic-row nearby-row-block" data-nearby-row>
+//       <div class="nearby-row-fields">
+//         <input placeholder="Place name" value="${escapeHtml(n.name||'')}" data-nearby-name/>
+//         <input placeholder="Distance (e.g. 12 km)" value="${escapeHtml(n.distance||'')}" data-nearby-distance/>
+//         <input placeholder="Short note" value="${escapeHtml(n.note||'')}" data-nearby-note/>
+//         <button type="button" class="remove-row" onclick="this.closest('[data-nearby-row]').remove()">✕</button>
+//       </div>
+//       <div class="nearby-row-image">
+//         <div class="img-upload-box small ${n.image?'has-image':''}" data-nearby-imgbox onclick="if(event.target.tagName!=='BUTTON') this.querySelector('input[type=file]').click()">
+//           ${n.image
+//             ? `<img src="${escapeHtml(n.image)}" alt="nearby preview"/><button type="button" class="img-remove-btn" onclick="event.stopPropagation(); removeNearbyImage(this)">✕</button>`
+//             : `<div class="up-hint">📷<br/><span style="font-size:0.72rem;">Add photo</span></div>`}
+//           <input type="file" accept="image/*" style="display:none;" onchange="handleNearbyImageFile(this)"/>
+//         </div>
+//         <input type="hidden" data-nearby-image value="${escapeHtml(n.image||'')}"/>
+//       </div>
+//     </div>`;
+// }
 // window.addDynamicRow = function(listId, kind){
 //   const el = document.getElementById(listId);
 //   const row = document.createElement('div');
 //   if(kind==='tip'){
 //     row.className='dynamic-row'; row.setAttribute('data-tip-row','');
 //     row.innerHTML = `<input placeholder="Tip (English)" data-tip-en/><input placeholder="Tip (Hindi)" data-tip-hi/><button type="button" class="remove-row" onclick="this.closest('[data-tip-row]').remove()">✕</button>`;
+//     el.appendChild(row);
 //   } else if(kind==='nearby'){
-//     row.className='dynamic-row'; row.setAttribute('data-nearby-row','');
-//     row.innerHTML = `<input placeholder="Place name" data-nearby-name/><input placeholder="Distance (e.g. 12 km)" data-nearby-distance/><input placeholder="Short note" data-nearby-note/><button type="button" class="remove-row" onclick="this.closest('[data-nearby-row]').remove()">✕</button>`;
+//     el.insertAdjacentHTML('beforeend', nearbyRowHtml());
 //   } else {
 //     row.className='dynamic-row'; row.setAttribute('data-source-row','');
 //     row.innerHTML = `<input placeholder="Organization" data-src-org/><input placeholder="Title" data-src-title/><input placeholder="URL" data-src-url/><button type="button" class="remove-row" onclick="this.closest('[data-source-row]').remove()">✕</button>`;
+//     el.appendChild(row);
 //   }
-//   el.appendChild(row);
 // };
 // window.toggleCustomCategory = function(val){
 //   const box = document.getElementById('customCategoryInput');
@@ -1249,6 +1315,62 @@
 //   window.__modalImages.gallery.splice(i,1);
 //   renderGalleryGrid();
 // };
+// /* ---- food / stay single-image helpers ---- */
+// window.setImageFromUrl = function(key, url){
+//   window.__modalImages[key] = url.trim();
+//   const box = document.getElementById(key+'UploadBox');
+//   if(!box) return;
+//   if(window.__modalImages[key]){
+//     box.classList.add('has-image');
+//     box.innerHTML = `<img src="${escapeHtml(window.__modalImages[key])}" alt="${key} preview" onerror="this.parentElement.classList.remove('has-image'); this.parentElement.innerHTML='<div class=up-hint>⚠️ Could not load that URL</div>';"/><button type="button" class="img-remove-btn" onclick="event.stopPropagation(); removeSingleImage('${key}')">✕</button>`;
+//   }
+// };
+// window.handleSingleImageFile = async function(key, file){
+//   if(!file) return;
+//   const statusEl = document.getElementById(key+'UploadStatus');
+//   if(statusEl) statusEl.textContent = 'Processing image…';
+//   try{
+//     const dataUrl = await compressImageFile(file, 1000, 0.8);
+//     window.__modalImages[key] = dataUrl;
+//     const box = document.getElementById(key+'UploadBox');
+//     box.classList.add('has-image');
+//     box.innerHTML = `<img src="${dataUrl}" alt="${key} preview"/><button type="button" class="img-remove-btn" onclick="event.stopPropagation(); removeSingleImage('${key}')">✕</button>`;
+//     const urlInput = document.getElementById(key+'UrlInput'); if(urlInput) urlInput.value = '';
+//     if(statusEl) statusEl.textContent = `Uploaded — ${Math.round(dataUrl.length/1024)} KB`;
+//   }catch(err){
+//     if(statusEl) statusEl.textContent = 'Could not process that image. Try a smaller JPG or PNG.';
+//   }
+// };
+// window.removeSingleImage = function(key){
+//   window.__modalImages[key] = '';
+//   const box = document.getElementById(key+'UploadBox');
+//   box.classList.remove('has-image');
+//   box.innerHTML = `<div class="up-hint">📷<br/>Click to upload<br/><span style="font-size:0.72rem;">JPG/PNG, auto-resized</span></div>`;
+//   const urlInput = document.getElementById(key+'UrlInput'); if(urlInput) urlInput.value = '';
+//   const statusEl = document.getElementById(key+'UploadStatus'); if(statusEl) statusEl.textContent = '';
+// };
+// /* ---- nearby place image helpers ---- */
+// window.handleNearbyImageFile = async function(fileInput){
+//   const file = fileInput.files[0];
+//   if(!file) return;
+//   const row = fileInput.closest('[data-nearby-row]');
+//   const box = row.querySelector('[data-nearby-imgbox]');
+//   const hidden = row.querySelector('[data-nearby-image]');
+//   try{
+//     const dataUrl = await compressImageFile(file, 700, 0.75);
+//     hidden.value = dataUrl;
+//     box.classList.add('has-image');
+//     box.innerHTML = `<img src="${dataUrl}" alt="nearby preview"/><button type="button" class="img-remove-btn" onclick="event.stopPropagation(); removeNearbyImage(this)">✕</button><input type="file" accept="image/*" style="display:none;" onchange="handleNearbyImageFile(this)"/>`;
+//   }catch(err){ /* ignore failed file */ }
+// };
+// window.removeNearbyImage = function(btn){
+//   const row = btn.closest('[data-nearby-row]');
+//   const box = row.querySelector('[data-nearby-imgbox]');
+//   const hidden = row.querySelector('[data-nearby-image]');
+//   hidden.value = '';
+//   box.classList.remove('has-image');
+//   box.innerHTML = `<div class="up-hint">📷<br/><span style="font-size:0.72rem;">Add photo</span></div><input type="file" accept="image/*" style="display:none;" onchange="handleNearbyImageFile(this)"/>`;
+// };
 // function renderGalleryGrid(){
 //   const grid = document.getElementById('galleryGrid');
 //   if(!grid) return;
@@ -1303,6 +1425,7 @@
 //     name: r.querySelector('[data-nearby-name]').value.trim(),
 //     distance: r.querySelector('[data-nearby-distance]').value.trim(),
 //     note: r.querySelector('[data-nearby-note]').value.trim(),
+//     image: (r.querySelector('[data-nearby-image]').value || '').trim(),
 //   })).filter(n=>n.name);
  
 //   const data = {
@@ -1317,15 +1440,21 @@
 //     history_en: fd.get('history_en').trim(), history_hi: fd.get('history_hi').trim(),
 //     culture_en: fd.get('culture_en').trim(), culture_hi: fd.get('culture_hi').trim(),
 //     best_time_en: fd.get('best_time_en').trim(), best_time_hi: fd.get('best_time_hi').trim(),
+//     local_language_en: fd.get('local_language_en').trim(), local_language_hi: fd.get('local_language_hi').trim(),
+//     budget_en: fd.get('budget_en').trim(), budget_hi: fd.get('budget_hi').trim(),
+//     food_en: fd.get('food_en').trim(), food_hi: fd.get('food_hi').trim(),
+//     stay_en: fd.get('stay_en').trim(), stay_hi: fd.get('stay_hi').trim(),
 //     cover_image: (window.__modalImages && window.__modalImages.cover) || '',
 //     images: (window.__modalImages && window.__modalImages.gallery) || [],
+//     food_image: (window.__modalImages && window.__modalImages.food) || '',
+//     stay_image: (window.__modalImages && window.__modalImages.stay) || '',
 //     status: fd.get('status'), verified: fd.get('verified') === 'on',
 //     tips, sources, nearby,
 //   };
 //   if(fd.get('category') === '__custom__' && !data.category){ alert('Please type a name for the new category.'); return false; }
 //   if(isNaN(data.lat) || isNaN(data.lng)){ alert('Latitude and longitude must be valid numbers.'); return false; }
 //   const approxSize = JSON.stringify(data).length;
-//   if(approxSize > 4200000){ alert('These images are too large to save (over ~4MB total). Please remove a photo or use smaller files.'); return false; }
+//   if(approxSize > 6000000){ alert('These images are too large to save (over ~6MB total). Please remove a photo or use smaller files.'); return false; }
  
 //   try{
 //     if(id){
@@ -1501,6 +1630,61 @@
 //   await loadData();
 //   render();
 // })();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1860,6 +2044,7 @@ let STATE = {
   route: parseHash(),
   filters: { search:'', state:'', category:'', sort:'name' },
   map: { instance:null, markers:[], userMarker:null, radius:50, userLoc:null },
+  verifiedMap: null,
   admin: { loggedIn: !!getAdminToken() },
   importDraft: { rows:null, step:1 },
   reviews: {},         // slug -> array of reviews (loaded from server)
@@ -2094,7 +2279,7 @@ function viewHome(){
   return `
   <section class="hero">
     <svg class="hero-trail" viewBox="0 0 800 400" preserveAspectRatio="none"><path d="M0,320 C150,280 220,120 400,150 C550,175 600,300 800,220" stroke="white" stroke-width="2" fill="none" stroke-dasharray="6 10"/></svg>
-    <div class="seal"><div class="seal-inner">Verified · ASI · Ministry of Culture · Since Antiquity</div></div>
+    <div class="seal" onclick="openVerifiedMapModal()" role="button" tabindex="0" style="cursor:pointer;"><div class="seal-inner">Verified · ASI · Ministry of Culture · Since Antiquity</div></div>
     <div class="hero-inner">
       <div class="eyebrow" style="color:#E7C99A;">Discover · Understand · Respect</div>
       <h1>${L==='hi'?'वह भारत जो आपने अभी तक नहीं देखा':"Discover the India You Haven't Seen Yet."}</h1>
@@ -2302,6 +2487,89 @@ function initMap(){
     el.innerHTML = `<div style="padding:24px;font-size:0.85rem;color:var(--charcoal-soft);">${STATE.lang==='hi'?'मानचित्र लोड नहीं हो सका। कृपया अपना इंटरनेट कनेक्शन जांचें।':'Map failed to load. Please check your internet connection.'}</div>`;
   });
 }
+
+/* ---------------- VERIFIED SEAL: India map popup ---------------- */
+window.openVerifiedMapModal = function(){
+  const L2 = STATE.lang;
+  const showDraftToggle = STATE.admin.loggedIn
+    ? `<label class="verified-map-toggle">
+         <input type="checkbox" id="verifiedMapShowDrafts" onchange="renderVerifiedMapMarkers()"/>
+         ${L2==='hi' ? 'मेरे ड्राफ्ट गंतव्य भी दिखाएं' : 'Also show my draft (unpublished) destinations'}
+       </label>`
+    : '';
+  const modalHtml = `
+  <div class="modal-overlay" id="verifiedMapOverlay" onclick="if(event.target===this) closeVerifiedMapModal()">
+    <div class="modal verified-map-modal">
+      <button class="close-x" onclick="closeVerifiedMapModal()">✕</button>
+      <h2 style="margin:0 0 4px;">${L2==='hi' ? 'भारत का सत्यापित मानचित्र' : 'India — Verified Destinations Map'}</h2>
+      <p style="font-size:0.82rem;color:var(--charcoal-soft);margin:0 0 12px;">${L2==='hi' ? 'हर बिंदु एक गंतव्य को उसके राज्य/जिले में सटीक रूप से दिखाता है।' : 'Each pin marks a destination at its exact state/district location, with a leader line to its name.'}</p>
+      ${showDraftToggle}
+      <div id="verifiedMapContainer" class="verified-map-container"></div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  initVerifiedMap();
+};
+window.closeVerifiedMapModal = function(){
+  const overlay = document.getElementById('verifiedMapOverlay');
+  if(overlay) overlay.remove();
+  if(STATE.verifiedMap && STATE.verifiedMap.instance){
+    STATE.verifiedMap.instance.remove();
+  }
+  STATE.verifiedMap = null;
+};
+function initVerifiedMap(){
+  const el = document.getElementById('verifiedMapContainer');
+  if(!el) return;
+  loadGoogleMaps().then(()=>{
+    if(document.getElementById('verifiedMapContainer') !== el) return;
+    const map = L.map(el, { zoomAnimation:true, fadeAnimation:true, markerZoomAnimation:true }).setView([22.9, 79.5], 3);
+    L.tileLayer(OSM_TILE_URL, { attribution: OSM_ATTRIBUTION, maxZoom: 19 }).addTo(map);
+    STATE.verifiedMap = { instance: map, markers: [] };
+    // Animated fly-in from a wide zoomed-out view down to India, then drop markers in.
+    setTimeout(()=>{
+      map.flyTo([22.9, 79.5], 5, { duration: 1.3, easeLinearity: 0.25 });
+      map.once('moveend', ()=> renderVerifiedMapMarkers());
+    }, 150);
+  }).catch(()=>{
+    el.innerHTML = `<div style="padding:24px;font-size:0.85rem;color:var(--charcoal-soft);">${STATE.lang==='hi'?'मानचित्र लोड नहीं हो सका। कृपया अपना इंटरनेट कनेक्शन जांचें।':'Map failed to load. Please check your internet connection.'}</div>`;
+  });
+}
+window.renderVerifiedMapMarkers = function(){
+  if(!STATE.verifiedMap || !STATE.verifiedMap.instance) return;
+  const map = STATE.verifiedMap.instance;
+  (STATE.verifiedMap.markers||[]).forEach(m=>map.removeLayer(m));
+  STATE.verifiedMap.markers = [];
+  const showDrafts = document.getElementById('verifiedMapShowDrafts');
+  const includeDrafts = !!(showDrafts && showDrafts.checked && STATE.admin.loggedIn);
+  const list = includeDrafts
+    ? STATE.destinations
+    : publishedDestinations();
+  list.forEach((d,idx)=>{
+    const isDraft = d.status !== 'published';
+    const color = CATEGORY_COLORS[d.category] || '#8A5A34';
+    const icon = L.divIcon({
+      className: 'vm-icon-wrap',
+      html: `<span class="vm-marker ${isDraft?'is-draft':''}" style="--vm-color:${color};animation-delay:${Math.min(idx*45,900)}ms;">
+               <span class="vm-pulse"></span>
+               <span class="vm-dot"></span>
+             </span>`,
+      iconSize: [16,16], iconAnchor: [8,8],
+    });
+    const marker = L.marker([d.lat, d.lng], { icon }).addTo(map);
+    marker.bindTooltip(
+      `${escapeHtml(t(d,'name'))}${isDraft ? ' (' + (STATE.lang==='hi'?'ड्राफ्ट':'draft') + ')' : ''}<br/><span style="font-weight:400;font-size:11px;">${escapeHtml(d.district)}, ${escapeHtml(d.state)}</span>`,
+      { permanent: true, direction: 'right', offset: [10,0], className: 'verified-map-label vm-label-in', opacity: 1 }
+    );
+    marker.bindPopup(`
+      <div style="min-width:170px;font-family:'Inter',sans-serif;">
+        <div style="font-weight:700;margin-bottom:2px;">${escapeHtml(t(d,'name'))}</div>
+        <div style="font-size:12px;color:#5B534A;margin-bottom:8px;">${fmtCategory(d.category)} · ${escapeHtml(d.district)}, ${escapeHtml(d.state)}</div>
+        ${d.status==='published' ? `<a href="#/destination/${d.slug}" onclick="closeVerifiedMapModal()" style="font-size:12px;font-weight:700;color:#9C4726;">View Details →</a>` : `<span style="font-size:11px;color:var(--charcoal-soft);">${STATE.lang==='hi'?'अभी अप्रकाशित':'Not published yet'}</span>`}
+      </div>`);
+    STATE.verifiedMap.markers.push(marker);
+  });
+};
  
 /* ---------------- views: DESTINATION DETAIL ---------------- */
 function viewDestination(slug){
