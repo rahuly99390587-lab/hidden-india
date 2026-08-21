@@ -316,7 +316,7 @@
   .row-actions button{ background:transparent; border:1px solid var(--border); border-radius:6px; padding:4px 9px; font-size:0.76rem; font-weight:600; transition:background .2s var(--ease), border-color .2s var(--ease); }
   .row-actions button:hover{ background:var(--ivory-deep); border-color:var(--terracotta); }
   .admin-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
-  .modal-overlay{ position:fixed; inset:0; background:rgba(29,25,21,0.55); backdrop-filter:blur(3px); display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto; z-index:900; animation:fade-in .2s var(--ease); }
+  .modal-overlay{ position:fixed; inset:0; background:rgba(29,25,21,0.55); backdrop-filter:blur(3px); display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto; z-index:2000; animation:fade-in .2s var(--ease); }
   @keyframes fade-in{ from{ opacity:0; } to{ opacity:1; } }
   .modal{ background:#fff; border-radius:16px; padding:28px; width:100%; max-width:760px; box-shadow:var(--shadow-lg); animation:modal-in .28s var(--ease-spring); }
   @keyframes modal-in{ from{ opacity:0; transform:translateY(14px) scale(0.98); } to{ opacity:1; transform:translateY(0) scale(1); } }
