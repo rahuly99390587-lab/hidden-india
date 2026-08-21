@@ -49,7 +49,61 @@
 
 
 
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // /* =========================================================
 //    HIDDEN INDIA — client-side demo app
 //    Data persists via window.storage (per-browser, personal).
@@ -314,6 +368,8 @@
 //   map: { instance:null, markers:[], userMarker:null, radius:50, userLoc:null },
 //   admin: { loggedIn: !!getAdminToken() },
 //   importDraft: { rows:null, step:1 },
+//   reviews: {},         // slug -> array of reviews (loaded from server)
+//   reviewsLoading: {},  // slug -> true while a fetch is in-flight
 // };
  
 // async function loadData(){
@@ -361,15 +417,22 @@
 // function findById(id){ return STATE.destinations.find(d=>d.id===id); }
 // function uniqueStates(){ return [...new Set(STATE.destinations.map(d=>d.state))]; }
  
-// /* ---------------- reviews & comments (stored locally per browser) ---------------- */
-// function reviewsKey(slug){ return 'hi_reviews_' + slug; }
-// function loadList(key){
-//   try{ return JSON.parse(localStorage.getItem(key) || '[]'); }catch(e){ return []; }
+// /* ---------------- reviews & comments (backend-backed via /api/destinations/:slug/reviews) ---------------- */
+// function getReviews(slug){ return STATE.reviews[slug] || []; }
+// async function loadReviews(slug){
+//   if(STATE.reviewsLoading[slug]) return;
+//   STATE.reviewsLoading[slug] = true;
+//   try{
+//     const data = await apiFetch(`/api/destinations/${encodeURIComponent(slug)}/reviews`);
+//     STATE.reviews[slug] = data || [];
+//   }catch(e){
+//     if(STATE.reviews[slug] === undefined) STATE.reviews[slug] = [];
+//     showToast('⚠ ' + e.message);
+//   }
+//   STATE.reviewsLoading[slug] = false;
+//   // Only re-render if the user is still looking at this destination.
+//   if(currentPath() === '/destination/' + slug) renderApp();
 // }
-// function saveList(key, list){
-//   try{ localStorage.setItem(key, JSON.stringify(list)); }catch(e){ /* storage blocked */ }
-// }
-// function getReviews(slug){ return loadList(reviewsKey(slug)); }
 // function avgRating(reviews){
 //   if(!reviews.length) return 0;
 //   return reviews.reduce((sum,r)=>sum+(r.rating||0),0) / reviews.length;
@@ -396,32 +459,46 @@
 //   if(!wrap) return;
 //   [...wrap.children].forEach((el,i)=>{ el.textContent = (i < val) ? '★' : '☆'; });
 // };
-// window.submitReview = function(slug){
+// window.submitReview = async function(slug){
 //   const nameEl = document.getElementById('reviewName_' + slug);
 //   const textEl = document.getElementById('reviewText_' + slug);
+//   const btnEl = document.getElementById('reviewSubmitBtn_' + slug);
 //   const name = (nameEl.value || '').trim();
 //   const text = (textEl.value || '').trim();
 //   const rating = window.STAR_INPUT_VALUE || 5;
 //   if(!name || !text){ showToast('⚠ Please add your name and a short review.'); return; }
-//   const reviews = getReviews(slug);
-//   reviews.unshift({ name: escapeHtml(name), text: escapeHtml(text), rating, date: new Date().toISOString() });
-//   saveList(reviewsKey(slug), reviews);
-//   window.STAR_INPUT_VALUE = 5;
-//   renderApp();
-//   showToast('✓ Thanks for your review!');
+//   if(btnEl){ btnEl.disabled = true; btnEl.textContent = '...'; }
+//   try{
+//     const review = await apiFetch(`/api/destinations/${encodeURIComponent(slug)}/reviews`, {
+//       method: 'POST',
+//       body: JSON.stringify({ name, rating, text }),
+//     });
+//     STATE.reviews[slug] = [review, ...(STATE.reviews[slug] || [])];
+//     window.STAR_INPUT_VALUE = 5;
+//     renderApp();
+//     showToast('✓ Thanks for your review!');
+//   }catch(e){
+//     showToast('⚠ ' + e.message);
+//     if(btnEl){ btnEl.disabled = false; btnEl.textContent = STATE.lang==='hi' ? 'समीक्षा सबमिट करें' : 'Submit Review'; }
+//   }
 // };
 // function reviewsAndCommentsSection(d, L){
-//   const reviews = getReviews(d.slug);
+//   const slug = d.slug;
+//   const isLoading = STATE.reviewsLoading[slug] && STATE.reviews[slug] === undefined;
+//   const reviews = getReviews(slug);
 //   const avg = avgRating(reviews);
 //   const reviewCards = reviews.map(r=>`
 //     <div class="source-card" style="align-items:flex-start;flex-direction:column;gap:4px;">
 //       <div style="display:flex;justify-content:space-between;width:100%;">
-//         <span class="org">${r.name}</span>
+//         <span class="org">${escapeHtml(r.name)}</span>
 //         <span style="color:var(--gold);font-size:0.85rem;">${starString(r.rating)}</span>
 //       </div>
-//       <div class="sub" style="font-size:0.85rem;color:var(--charcoal);">${r.text}</div>
-//       <div class="sub" style="font-size:0.7rem;">${timeAgo(r.date)}</div>
+//       <div class="sub" style="font-size:0.85rem;color:var(--charcoal);">${escapeHtml(r.text)}</div>
+//       <div class="sub" style="font-size:0.7rem;">${timeAgo(r.created_at)}</div>
 //     </div>`).join('');
+//   const listHtml = isLoading
+//     ? `<div style="font-size:0.85rem;color:var(--charcoal-soft);margin-top:10px;">${L==='hi'?'समीक्षाएं लोड हो रही हैं...':'Loading reviews...'}</div>`
+//     : (reviewCards || `<div style="font-size:0.85rem;color:var(--charcoal-soft);margin-top:10px;">${L==='hi'?'अभी तक कोई समीक्षा नहीं। पहली समीक्षा लिखें!':'No reviews yet. Be the first to review!'}</div>`);
 //   return `
 //     <div class="prose" data-hi="${L==='hi'}" style="margin-top:32px;">
 //       <h2>⭐ ${L==='hi'?'रेटिंग और समीक्षाएं':'Ratings & Reviews'}</h2>
@@ -431,18 +508,17 @@
 //       </div>
 //       <div class="side-card" style="max-width:520px;">
 //         <h3>${L==='hi'?'अपनी समीक्षा लिखें':'Write a Review'}</h3>
-//         <div class="form-group"><label>${L==='hi'?'नाम':'Your Name'}</label><input id="reviewName_${d.slug}" type="text" placeholder="${L==='hi'?'आपका नाम':'Your name'}"/></div>
+//         <div class="form-group"><label>${L==='hi'?'नाम':'Your Name'}</label><input id="reviewName_${slug}" type="text" placeholder="${L==='hi'?'आपका नाम':'Your name'}"/></div>
 //         <div class="form-group">
 //           <label>${L==='hi'?'रेटिंग':'Rating'}</label>
-//           <div id="starInput_${d.slug}" style="font-size:1.4rem;color:var(--gold);cursor:pointer;letter-spacing:2px;">
-//             ${[1,2,3,4,5].map(i=>`<span onclick="setStarInput('${d.slug}',${i})">★</span>`).join('')}
+//           <div id="starInput_${slug}" style="font-size:1.4rem;color:var(--gold);cursor:pointer;letter-spacing:2px;">
+//             ${[1,2,3,4,5].map(i=>`<span onclick="setStarInput('${slug}',${i})">★</span>`).join('')}
 //           </div>
 //         </div>
-//         <div class="form-group"><label>${L==='hi'?'समीक्षा':'Review'}</label><textarea id="reviewText_${d.slug}" placeholder="${L==='hi'?'अपना अनुभव साझा करें...':'Share your experience...'}"></textarea></div>
-//         <button class="btn btn-primary btn-sm" onclick="submitReview('${d.slug}')">${L==='hi'?'समीक्षा सबमिट करें':'Submit Review'}</button>
+//         <div class="form-group"><label>${L==='hi'?'समीक्षा':'Review'}</label><textarea id="reviewText_${slug}" placeholder="${L==='hi'?'अपना अनुभव साझा करें...':'Share your experience...'}"></textarea></div>
+//         <button class="btn btn-primary btn-sm" id="reviewSubmitBtn_${slug}" onclick="submitReview('${slug}')">${L==='hi'?'समीक्षा सबमिट करें':'Submit Review'}</button>
 //       </div>
-//       ${reviewCards || `<div style="font-size:0.85rem;color:var(--charcoal-soft);margin-top:10px;">${L==='hi'?'अभी तक कोई समीक्षा नहीं। पहली समीक्षा लिखें!':'No reviews yet. Be the first to review!'}</div>`}
- 
+//       ${listHtml}
 //     </div>`;
 // }
  
@@ -739,6 +815,9 @@
 //   const d = findBySlug(slug);
 //   if(!d || (d.status !== 'published')){
 //     return `<div class="wrap section">${emptyState(L==='hi'?'गंतव्य नहीं मिला (404)':'Destination not found (404)')}<div style="text-align:center;"><a class="btn btn-primary" href="#/explore">${L==='hi'?'अन्वेषण पर वापस जाएं':'Back to Explore'}</a></div></div>`;
+//   }
+//   if(STATE.reviews[slug] === undefined && !STATE.reviewsLoading[slug]){
+//     loadReviews(slug); // fire-and-forget; re-renders itself once data arrives
 //   }
 //   const color = CATEGORY_COLORS[d.category] || '#8A5A34';
 //   const tips = (d.tips||[]).map(tp=>`<div class="tip-row"><span class="tick">✓</span><span>${escapeHtml(L==='hi'?tp.hi:tp.en)}</span></div>`).join('');
@@ -1422,16 +1501,6 @@
 //   await loadData();
 //   render();
 // })();
- 
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2253,6 +2322,7 @@ function viewDestination(slug){
     </div>`).join('');
   const nearby = (d.nearby||[]).map(n=>`
     <div class="source-card">
+      ${n.image ? `<img src="${escapeHtml(n.image)}" alt="${escapeHtml(n.name)}" class="nearby-thumb" onclick="openImageLightbox(this.src)"/>` : ''}
       <div>
         <div class="org">${escapeHtml(n.name)}</div>
         <div class="sub">${escapeHtml(n.note||'')}</div>
@@ -2291,6 +2361,14 @@ function viewDestination(slug){
         </div>
         <h2>${L==='hi'?'यात्रा का सर्वोत्तम समय':'Best Time to Visit'}</h2>
         <p>${escapeHtml(t(d,'best_time'))}</p>
+        ${(t(d,'food')) ? `
+        <h2>🍲 ${L==='hi'?'क्या खाएं':'Local Food to Try'}</h2>
+        ${d.food_image ? `<img src="${escapeHtml(d.food_image)}" alt="food" class="section-photo" onclick="openImageLightbox(this.src)"/>` : ''}
+        <p>${escapeHtml(t(d,'food'))}</p>` : ''}
+        ${(t(d,'stay')) ? `
+        <h2>🛏️ ${L==='hi'?'कहाँ ठहरें':'Where to Stay'}</h2>
+        ${d.stay_image ? `<img src="${escapeHtml(d.stay_image)}" alt="stay" class="section-photo" onclick="openImageLightbox(this.src)"/>` : ''}
+        <p>${escapeHtml(t(d,'stay'))}</p>` : ''}
         ${(d.images && d.images.length) ? `
         <h2>${L==='hi'?'तस्वीरें':'Photos'}</h2>
         <div class="gallery-grid">
@@ -2312,6 +2390,12 @@ function viewDestination(slug){
           <h3>📍 ${L==='hi'?'आस-पास के प्रसिद्ध स्थान':'Nearby Places'}</h3>
           ${nearby || `<div style="font-size:0.85rem;color:var(--charcoal-soft);">${L==='hi'?'अभी कोई आस-पास का स्थान दर्ज नहीं किया गया':'No nearby places added yet.'}</div>`}
         </div>
+        ${(t(d,'local_language') || t(d,'budget')) ? `
+        <div class="side-card">
+          <h3>ℹ️ ${L==='hi'?'यात्रा जानकारी':'Trip Info'}</h3>
+          ${t(d,'local_language') ? `<div style="margin-bottom:10px;"><div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--charcoal-soft);margin-bottom:2px;">🗣️ ${L==='hi'?'स्थानीय भाषा':'Local Language'}</div><div style="font-size:0.9rem;">${escapeHtml(t(d,'local_language'))}</div></div>` : ''}
+          ${t(d,'budget') ? `<div><div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--charcoal-soft);margin-bottom:2px;">💰 ${L==='hi'?'बजट':'Budget'}</div><div style="font-size:0.9rem;">${escapeHtml(t(d,'budget'))}</div></div>` : ''}
+        </div>` : ''}
       </div>
     </div>
   </div>`;
@@ -2474,9 +2558,17 @@ window.openDestinationModal = function(id){
   const isEdit = !!d;
   const v = d || {name_en:'',name_hi:'',state:'',district:'',category:'heritage',lat:'',lng:'',
     short_en:'',short_hi:'',about_en:'',about_hi:'',history_en:'',history_hi:'',culture_en:'',culture_hi:'',
-    best_time_en:'',best_time_hi:'',cover_image:'', status:'draft', verified:false,
-    tips:[{en:'',hi:''}], sources:[{organization:'',title:'',url:''}], nearby:[{name:'',distance:'',note:''}]};
-  window.__modalImages = { cover: v.cover_image || '', gallery: JSON.parse(JSON.stringify(v.images||[])) };
+    best_time_en:'',best_time_hi:'',cover_image:'',
+    food_en:'',food_hi:'',food_image:'',stay_en:'',stay_hi:'',stay_image:'',
+    local_language_en:'',local_language_hi:'',budget_en:'',budget_hi:'',
+    status:'draft', verified:false,
+    tips:[{en:'',hi:''}], sources:[{organization:'',title:'',url:''}], nearby:[{name:'',distance:'',note:'',image:''}]};
+  window.__modalImages = {
+    cover: v.cover_image || '',
+    gallery: JSON.parse(JSON.stringify(v.images||[])),
+    food: v.food_image || '',
+    stay: v.stay_image || '',
+  };
   const catOpts = CATEGORIES.map(c=>`<option value="${c.id}" ${v.category===c.id?'selected':''}>${c.name_en}</option>`).join('');
   const tipsHtml = v.tips.map((tp,i)=>`
     <div class="dynamic-row" data-tip-row>
@@ -2491,13 +2583,7 @@ window.openDestinationModal = function(id){
       <input placeholder="URL" value="${escapeHtml(s.url)}" data-src-url/>
       <button type="button" class="remove-row" onclick="this.closest('[data-source-row]').remove()">✕</button>
     </div>`).join('');
-  const nearbyHtml = (v.nearby||[]).map((n,i)=>`
-    <div class="dynamic-row" data-nearby-row>
-      <input placeholder="Place name" value="${escapeHtml(n.name)}" data-nearby-name/>
-      <input placeholder="Distance (e.g. 12 km)" value="${escapeHtml(n.distance||'')}" data-nearby-distance/>
-      <input placeholder="Short note" value="${escapeHtml(n.note||'')}" data-nearby-note/>
-      <button type="button" class="remove-row" onclick="this.closest('[data-nearby-row]').remove()">✕</button>
-    </div>`).join('');
+  const nearbyHtml = (v.nearby||[]).map((n,i)=>nearbyRowHtml(n)).join('');
  
   const modalHtml = `
   <div class="modal-overlay" id="destModalOverlay" onclick="if(event.target===this) closeModal()">
@@ -2556,7 +2642,44 @@ window.openDestinationModal = function(id){
           <div class="form-group"><label>Cultural Significance (HI)</label><textarea name="culture_hi">${escapeHtml(v.culture_hi)}</textarea></div>
           <div class="form-group"><label>Best Time to Visit (EN)</label><input name="best_time_en" value="${escapeHtml(v.best_time_en)}"/></div>
           <div class="form-group"><label>Best Time to Visit (HI)</label><input name="best_time_hi" value="${escapeHtml(v.best_time_hi)}"/></div>
+          <div class="form-group"><label>Local Language (EN)</label><input name="local_language_en" placeholder="e.g. Kashmiri, Urdu" value="${escapeHtml(v.local_language_en||'')}"/></div>
+          <div class="form-group"><label>Local Language (HI)</label><input name="local_language_hi" placeholder="जैसे कश्मीरी, उर्दू" value="${escapeHtml(v.local_language_hi||'')}"/></div>
+          <div class="form-group"><label>Budget (EN)</label><input name="budget_en" placeholder="e.g. ₹1,500–3,000/day" value="${escapeHtml(v.budget_en||'')}"/></div>
+          <div class="form-group"><label>Budget (HI)</label><input name="budget_hi" placeholder="जैसे ₹1,500–3,000/दिन" value="${escapeHtml(v.budget_hi||'')}"/></div>
         </div>
+
+        <div class="form-section-title">Food</div>
+        <div class="form-grid">
+          <div class="form-group"><label>What to Eat (EN)</label><textarea name="food_en" placeholder="Local dishes worth trying">${escapeHtml(v.food_en||'')}</textarea></div>
+          <div class="form-group"><label>What to Eat (HI)</label><textarea name="food_hi" placeholder="कोशिश करने लायक स्थानीय व्यंजन">${escapeHtml(v.food_hi||'')}</textarea></div>
+          <div class="form-group">
+            <label>Food Photo</label>
+            <div id="foodUploadBox" class="img-upload-box ${v.food_image?'has-image':''}" onclick="if(event.target.tagName!=='BUTTON') document.getElementById('foodFileInput').click()">
+              ${v.food_image ? `<img src="${escapeHtml(v.food_image)}" alt="food preview"/><button type="button" class="img-remove-btn" onclick="event.stopPropagation(); removeSingleImage('food')">✕</button>` : `<div class="up-hint">📷<br/>Click to upload a food photo<br/><span style="font-size:0.72rem;">JPG/PNG, auto-resized</span></div>`}
+            </div>
+            <input type="file" id="foodFileInput" accept="image/*" style="display:none;" onchange="handleSingleImageFile('food', this.files[0])"/>
+            <div id="foodUploadStatus" class="upload-progress"></div>
+            <label style="margin-top:10px;">or paste an image URL</label>
+            <input id="foodUrlInput" placeholder="https://..." value="${(v.food_image||'').startsWith('data:') ? '' : escapeHtml(v.food_image||'')}" oninput="setImageFromUrl('food', this.value)"/>
+          </div>
+        </div>
+
+        <div class="form-section-title">Stay</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Where to Stay (EN)</label><textarea name="stay_en" placeholder="Accommodation options">${escapeHtml(v.stay_en||'')}</textarea></div>
+          <div class="form-group"><label>Where to Stay (HI)</label><textarea name="stay_hi" placeholder="ठहरने के विकल्प">${escapeHtml(v.stay_hi||'')}</textarea></div>
+          <div class="form-group">
+            <label>Stay Photo</label>
+            <div id="stayUploadBox" class="img-upload-box ${v.stay_image?'has-image':''}" onclick="if(event.target.tagName!=='BUTTON') document.getElementById('stayFileInput').click()">
+              ${v.stay_image ? `<img src="${escapeHtml(v.stay_image)}" alt="stay preview"/><button type="button" class="img-remove-btn" onclick="event.stopPropagation(); removeSingleImage('stay')">✕</button>` : `<div class="up-hint">📷<br/>Click to upload a stay photo<br/><span style="font-size:0.72rem;">JPG/PNG, auto-resized</span></div>`}
+            </div>
+            <input type="file" id="stayFileInput" accept="image/*" style="display:none;" onchange="handleSingleImageFile('stay', this.files[0])"/>
+            <div id="stayUploadStatus" class="upload-progress"></div>
+            <label style="margin-top:10px;">or paste an image URL</label>
+            <input id="stayUrlInput" placeholder="https://..." value="${(v.stay_image||'').startsWith('data:') ? '' : escapeHtml(v.stay_image||'')}" oninput="setImageFromUrl('stay', this.value)"/>
+          </div>
+        </div>
+
         <div class="form-section-title">Responsible Tourism Tips</div>
         <div id="tipsList">${tipsHtml}</div>
         <button type="button" class="btn btn-ghost btn-sm" onclick="addDynamicRow('tipsList','tip')">+ Add Tip</button>
@@ -2584,20 +2707,41 @@ window.openDestinationModal = function(id){
   </div>`;
   document.body.insertAdjacentHTML('beforeend', modalHtml);
 };
+function nearbyRowHtml(n){
+  n = n || {name:'',distance:'',note:'',image:''};
+  return `
+    <div class="dynamic-row nearby-row-block" data-nearby-row>
+      <div class="nearby-row-fields">
+        <input placeholder="Place name" value="${escapeHtml(n.name||'')}" data-nearby-name/>
+        <input placeholder="Distance (e.g. 12 km)" value="${escapeHtml(n.distance||'')}" data-nearby-distance/>
+        <input placeholder="Short note" value="${escapeHtml(n.note||'')}" data-nearby-note/>
+        <button type="button" class="remove-row" onclick="this.closest('[data-nearby-row]').remove()">✕</button>
+      </div>
+      <div class="nearby-row-image">
+        <div class="img-upload-box small ${n.image?'has-image':''}" data-nearby-imgbox onclick="if(event.target.tagName!=='BUTTON') this.querySelector('input[type=file]').click()">
+          ${n.image
+            ? `<img src="${escapeHtml(n.image)}" alt="nearby preview"/><button type="button" class="img-remove-btn" onclick="event.stopPropagation(); removeNearbyImage(this)">✕</button>`
+            : `<div class="up-hint">📷<br/><span style="font-size:0.72rem;">Add photo</span></div>`}
+          <input type="file" accept="image/*" style="display:none;" onchange="handleNearbyImageFile(this)"/>
+        </div>
+        <input type="hidden" data-nearby-image value="${escapeHtml(n.image||'')}"/>
+      </div>
+    </div>`;
+}
 window.addDynamicRow = function(listId, kind){
   const el = document.getElementById(listId);
   const row = document.createElement('div');
   if(kind==='tip'){
     row.className='dynamic-row'; row.setAttribute('data-tip-row','');
     row.innerHTML = `<input placeholder="Tip (English)" data-tip-en/><input placeholder="Tip (Hindi)" data-tip-hi/><button type="button" class="remove-row" onclick="this.closest('[data-tip-row]').remove()">✕</button>`;
+    el.appendChild(row);
   } else if(kind==='nearby'){
-    row.className='dynamic-row'; row.setAttribute('data-nearby-row','');
-    row.innerHTML = `<input placeholder="Place name" data-nearby-name/><input placeholder="Distance (e.g. 12 km)" data-nearby-distance/><input placeholder="Short note" data-nearby-note/><button type="button" class="remove-row" onclick="this.closest('[data-nearby-row]').remove()">✕</button>`;
+    el.insertAdjacentHTML('beforeend', nearbyRowHtml());
   } else {
     row.className='dynamic-row'; row.setAttribute('data-source-row','');
     row.innerHTML = `<input placeholder="Organization" data-src-org/><input placeholder="Title" data-src-title/><input placeholder="URL" data-src-url/><button type="button" class="remove-row" onclick="this.closest('[data-source-row]').remove()">✕</button>`;
+    el.appendChild(row);
   }
-  el.appendChild(row);
 };
 window.toggleCustomCategory = function(val){
   const box = document.getElementById('customCategoryInput');
@@ -2674,6 +2818,62 @@ window.removeGalleryImage = function(i){
   window.__modalImages.gallery.splice(i,1);
   renderGalleryGrid();
 };
+/* ---- food / stay single-image helpers ---- */
+window.setImageFromUrl = function(key, url){
+  window.__modalImages[key] = url.trim();
+  const box = document.getElementById(key+'UploadBox');
+  if(!box) return;
+  if(window.__modalImages[key]){
+    box.classList.add('has-image');
+    box.innerHTML = `<img src="${escapeHtml(window.__modalImages[key])}" alt="${key} preview" onerror="this.parentElement.classList.remove('has-image'); this.parentElement.innerHTML='<div class=up-hint>⚠️ Could not load that URL</div>';"/><button type="button" class="img-remove-btn" onclick="event.stopPropagation(); removeSingleImage('${key}')">✕</button>`;
+  }
+};
+window.handleSingleImageFile = async function(key, file){
+  if(!file) return;
+  const statusEl = document.getElementById(key+'UploadStatus');
+  if(statusEl) statusEl.textContent = 'Processing image…';
+  try{
+    const dataUrl = await compressImageFile(file, 1000, 0.8);
+    window.__modalImages[key] = dataUrl;
+    const box = document.getElementById(key+'UploadBox');
+    box.classList.add('has-image');
+    box.innerHTML = `<img src="${dataUrl}" alt="${key} preview"/><button type="button" class="img-remove-btn" onclick="event.stopPropagation(); removeSingleImage('${key}')">✕</button>`;
+    const urlInput = document.getElementById(key+'UrlInput'); if(urlInput) urlInput.value = '';
+    if(statusEl) statusEl.textContent = `Uploaded — ${Math.round(dataUrl.length/1024)} KB`;
+  }catch(err){
+    if(statusEl) statusEl.textContent = 'Could not process that image. Try a smaller JPG or PNG.';
+  }
+};
+window.removeSingleImage = function(key){
+  window.__modalImages[key] = '';
+  const box = document.getElementById(key+'UploadBox');
+  box.classList.remove('has-image');
+  box.innerHTML = `<div class="up-hint">📷<br/>Click to upload<br/><span style="font-size:0.72rem;">JPG/PNG, auto-resized</span></div>`;
+  const urlInput = document.getElementById(key+'UrlInput'); if(urlInput) urlInput.value = '';
+  const statusEl = document.getElementById(key+'UploadStatus'); if(statusEl) statusEl.textContent = '';
+};
+/* ---- nearby place image helpers ---- */
+window.handleNearbyImageFile = async function(fileInput){
+  const file = fileInput.files[0];
+  if(!file) return;
+  const row = fileInput.closest('[data-nearby-row]');
+  const box = row.querySelector('[data-nearby-imgbox]');
+  const hidden = row.querySelector('[data-nearby-image]');
+  try{
+    const dataUrl = await compressImageFile(file, 700, 0.75);
+    hidden.value = dataUrl;
+    box.classList.add('has-image');
+    box.innerHTML = `<img src="${dataUrl}" alt="nearby preview"/><button type="button" class="img-remove-btn" onclick="event.stopPropagation(); removeNearbyImage(this)">✕</button><input type="file" accept="image/*" style="display:none;" onchange="handleNearbyImageFile(this)"/>`;
+  }catch(err){ /* ignore failed file */ }
+};
+window.removeNearbyImage = function(btn){
+  const row = btn.closest('[data-nearby-row]');
+  const box = row.querySelector('[data-nearby-imgbox]');
+  const hidden = row.querySelector('[data-nearby-image]');
+  hidden.value = '';
+  box.classList.remove('has-image');
+  box.innerHTML = `<div class="up-hint">📷<br/><span style="font-size:0.72rem;">Add photo</span></div><input type="file" accept="image/*" style="display:none;" onchange="handleNearbyImageFile(this)"/>`;
+};
 function renderGalleryGrid(){
   const grid = document.getElementById('galleryGrid');
   if(!grid) return;
@@ -2728,6 +2928,7 @@ window.saveDestination = async function(e, id){
     name: r.querySelector('[data-nearby-name]').value.trim(),
     distance: r.querySelector('[data-nearby-distance]').value.trim(),
     note: r.querySelector('[data-nearby-note]').value.trim(),
+    image: (r.querySelector('[data-nearby-image]').value || '').trim(),
   })).filter(n=>n.name);
  
   const data = {
@@ -2742,15 +2943,21 @@ window.saveDestination = async function(e, id){
     history_en: fd.get('history_en').trim(), history_hi: fd.get('history_hi').trim(),
     culture_en: fd.get('culture_en').trim(), culture_hi: fd.get('culture_hi').trim(),
     best_time_en: fd.get('best_time_en').trim(), best_time_hi: fd.get('best_time_hi').trim(),
+    local_language_en: fd.get('local_language_en').trim(), local_language_hi: fd.get('local_language_hi').trim(),
+    budget_en: fd.get('budget_en').trim(), budget_hi: fd.get('budget_hi').trim(),
+    food_en: fd.get('food_en').trim(), food_hi: fd.get('food_hi').trim(),
+    stay_en: fd.get('stay_en').trim(), stay_hi: fd.get('stay_hi').trim(),
     cover_image: (window.__modalImages && window.__modalImages.cover) || '',
     images: (window.__modalImages && window.__modalImages.gallery) || [],
+    food_image: (window.__modalImages && window.__modalImages.food) || '',
+    stay_image: (window.__modalImages && window.__modalImages.stay) || '',
     status: fd.get('status'), verified: fd.get('verified') === 'on',
     tips, sources, nearby,
   };
   if(fd.get('category') === '__custom__' && !data.category){ alert('Please type a name for the new category.'); return false; }
   if(isNaN(data.lat) || isNaN(data.lng)){ alert('Latitude and longitude must be valid numbers.'); return false; }
   const approxSize = JSON.stringify(data).length;
-  if(approxSize > 4200000){ alert('These images are too large to save (over ~4MB total). Please remove a photo or use smaller files.'); return false; }
+  if(approxSize > 6000000){ alert('These images are too large to save (over ~6MB total). Please remove a photo or use smaller files.'); return false; }
  
   try{
     if(id){
