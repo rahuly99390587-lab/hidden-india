@@ -68,7 +68,8 @@
     overflow:hidden;
   }
   .nav-video-bg{ position:absolute; inset:0; z-index:0; overflow:hidden; }
-  .nav-video-bg video{ width:100%; height:100%; object-fit:contain; opacity:1; }
+  .nav-image-strip{ width:100%; height:100%; display:flex; }
+  .nav-image-strip img{ flex:1 1 0; width:100%; height:100%; object-fit:cover; object-position:center; }
   .nav-video-overlay{ position:absolute; inset:0; background:rgba(246,241,230,0.15); }
   .nav-inner{ position:relative; z-index:1; max-width:1180px; margin:0 auto; padding:14px 20px; display:flex; align-items:center; gap:18px; }
   .mobile-nav-panel{ position:relative; z-index:1; }
