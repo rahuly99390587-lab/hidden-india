@@ -3246,6 +3246,90 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* =========================================================
    HIDDEN INDIA — client-side demo app
    Data persists via window.storage (per-browser, personal).
@@ -3754,6 +3838,7 @@ function viewHome(){
       </form>
       <div class="hero-actions">
         <a class="btn btn-outline-light" href="#/map">📍 ${L==='hi'?'पास में खोजें':'Explore Near Me'}</a>
+        <button type="button" class="btn btn-outline-light" onclick="openVerifiedMapModal()">🗺️ ${L==='hi'?'सत्यापित मानचित्र देखें':'View Verified Map'}</button>
       </div>
     </div>
   </section>
